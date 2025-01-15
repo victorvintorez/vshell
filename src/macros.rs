@@ -18,3 +18,10 @@ macro_rules! try_send {
         $tx.try_send($msg).expect($crate::error::ERR_CHANNEL_SEND)
     };
 }
+
+#[macro_export]
+macro_rules! send {
+    ($tx:expr, $msg:expr) => {
+        $tx.send($msg).expect($crate::error::ERR_CHANNEL_SEND)
+    };
+}

@@ -1,126 +1,40 @@
-use std::process::exit;
+use std::env;
+use std::path::PathBuf;
+use color_eyre::Report;
 use serde::Deserialize;
-use tracing::error;
+use tracing::{debug, error, info, warn};
 use universal_config::ConfigLoader;
 
-pub fn load_config() -> Config {
-    let config_loader = ConfigLoader::new("vshell");
-    config_loader.find_and_load().unwrap_or_else(|err| {
+pub fn load_config(config_dir: Option<PathBuf>) -> (Config, PathBuf) {
+    let (config, dir) = match config_dir {
+        Some(conf_dir) => {
+            (ConfigLoader::load(&conf_dir), conf_dir.parent().map(PathBuf::from).ok_or_else(|| Report::msg("Failed to get parent directory of config directory")))
+        }
+        None => {
+            let config_loader = ConfigLoader::new("vshell");
+            (
+                config_loader.find_and_load(),
+                config_loader.config_dir().map_err(Report::new),
+            )
+        }
+    };
+
+    let config = config.unwrap_or_else(|err| {
         error!("Failed to load config: {}", err);
-        exit(1);
-    })
+        warn!("Using default config");
+        
+        Config::default()
+    });
+    
+    let dir = dir.and_then(|dir| dir.canonicalize().map_err(Report::new)).unwrap_or_else(|_| env::current_dir().expect("to have current directory"));
+    
+    debug!("Using config.toml from: {}/", dir.display());
+    
+    (config, dir)
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Default, Debug)]
 pub struct Config {
-    pub focused_window: FocusedWindow,
-    pub ollama: Ollama,
-    pub workspaces: Workspaces,
-    pub programs: Programs,
-    pub music: Music,
-    pub wallpapers: Wallpapers,
-    pub search: Search,
-    pub weather: Weather,
-}
-
-#[derive(Deserialize)]
-pub struct FocusedWindow {
-    pub title_rewrites: Option<Vec<(String, String)>>, // initialClass regex, title replacement
-    pub icon_rewrites: Option<Vec<(String, String)>> // initialClass regex, icon replacement
-}
-
-#[derive(Deserialize)]
-pub struct Workspaces {
     #[serde(default)]
-    pub count: u8,
-}
-impl Default for Workspaces {
-    fn default() -> Self {
-        Workspaces {
-            count: 4,
-        }
-    }
-}
-
-#[derive(Deserialize)]
-pub struct Ollama {
-    #[serde(default)]
-    pub url: String,
-    #[serde(default)]
-    pub port: u16,
-    #[serde(default)]
-    pub default_model: String,
-}
-impl Default for Ollama {
-    fn default() -> Self {
-        Ollama {
-            url: "http://localhost".to_string(),
-            port: 11434,
-            default_model: "llama3.3:latest".to_string(),
-        }
-    }
-}
-
-#[derive(Deserialize)]
-pub struct Programs {
-    pub terminal: String,
-}
-impl Default for Programs {
-    fn default() -> Self {
-        Programs {
-            terminal: "foot".to_string(),
-        }
-    }
-}
-
-#[derive(Deserialize)]
-pub struct Music {
-    pub player: String,
-}
-impl Default for Music {
-    fn default() -> Self {
-        Music {
-            player: "mpv".to_string(),
-        }
-    }
-}
-
-#[derive(Deserialize)]
-pub struct Wallpapers {
-    pub path: String,
-    pub allow_nsfw: bool,
-}
-impl Default for Wallpapers {
-    fn default() -> Self {
-        Wallpapers {
-            path: "Pictures/Wallpapers".to_string(),
-            allow_nsfw: false,
-        }
-    }
-}
-
-#[derive(Deserialize)]
-pub struct Search {
-    pub engine: String,
-}
-impl Default for Search {
-    fn default() -> Self {
-        Search {
-            engine: "https://duckduckgo.com/?q=".to_string(),
-        }
-    }
-}
-
-#[derive(Deserialize)]
-pub struct Weather {
-    pub location: String,
-    pub unit: String,
-}
-impl Default for Weather {
-    fn default() -> Self {
-        Weather {
-            location: "New York".to_string(),
-            unit: "celcius".to_string(),
-        }
-    }
+    pub monitor: String,
 }

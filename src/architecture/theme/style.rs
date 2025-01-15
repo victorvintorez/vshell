@@ -67,21 +67,21 @@ pub fn load_styles(style_path: PathBuf, style_type: StyleExt, app: Application) 
 
 fn css_to_string(style_path: PathBuf, style_type: StyleExt) -> String {
     match style_type {
-        StyleExt::Sass => grass::from_path(style_path.join("style.sass"), &grass::Options::default()).map_or_else(
+        StyleExt::Sass => grass::from_path(style_path, &grass::Options::default()).map_or_else(
             |err| {
                 error!("Failed to load style.sass: {}", err);
                 String::new()
             },
             |style| style,
         ),
-        StyleExt::Scss => grass::from_path(style_path.join("style.scss"), &grass::Options::default()).map_or_else(
+        StyleExt::Scss => grass::from_path(style_path, &grass::Options::default()).map_or_else(
             |err| {
                 error!("Failed to load style.scss: {}", err);
                 String::new()
             },
             |style| style,
         ),
-        StyleExt::Css => std::fs::read_to_string(style_path.join("style.css")).map_or_else(
+        StyleExt::Css => std::fs::read_to_string(style_path).map_or_else(
             |err| {
                 error!("Failed to load style.css: {}", err);
                 String::new()
@@ -91,10 +91,42 @@ fn css_to_string(style_path: PathBuf, style_type: StyleExt) -> String {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum StyleExt {
     Sass,
     Scss,
     Css,
 }
 
+impl StyleExt {
+    pub fn from_path(style_path: &PathBuf) -> Option<Self> {
+        if style_path.is_file() {
+            match style_path.extension().and_then(|ext| ext.to_str()) {
+                Some("sass") => Some(StyleExt::Sass),
+                Some("scss") => Some(StyleExt::Scss),
+                Some("css") => Some(StyleExt::Css),
+                _ => None,
+            }
+        } else {
+            if style_path.join("style.sass").exists() {
+                Some(StyleExt::Sass)
+            } else if style_path.join("style.scss").exists() {
+                Some(StyleExt::Scss)
+            } else if style_path.join("style.css").exists() {
+                Some(StyleExt::Css)
+            } else {
+                None
+            }
+        }
+    }
+}
+
+impl std::fmt::Display for StyleExt {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            StyleExt::Sass => write!(f, "sass"),
+            StyleExt::Scss => write!(f, "scss"),
+            StyleExt::Css => write!(f, "css"),
+        }
+    }
+}
