@@ -1,5 +1,5 @@
 pub(crate) mod theme;
-mod ipc;
+pub(crate) mod ipc;
 mod storage;
 mod i18n;
 pub(crate) mod cli;

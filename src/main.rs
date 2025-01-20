@@ -4,8 +4,6 @@ mod error;
 mod logging;
 mod macros;
 
-use crate::architecture::theme::style::load_styles;
-use crate::architecture::theme::style::StyleExt;
 use clap::Parser;
 use color_eyre::Report;
 use dirs::config_dir;
@@ -20,6 +18,8 @@ use std::sync::{mpsc, Arc, OnceLock};
 use tokio::runtime::Runtime;
 use tokio::task::JoinHandle;
 use tracing::{debug, error, info};
+use crate::architecture::theme::style::{load_styles, StyleExt};
+use crate::architecture::ipc::Ipc;
 
 fn main() {
     let _guard = logging::setup_logging();
@@ -74,7 +74,8 @@ impl VShell {
 
             running.store(true, Ordering::Relaxed);
 
-            // start IPC
+            let ipc = Ipc::new();
+            ipc.start(app, instance.clone());
 
             let mut style_path = style_path.clone().unwrap_or_else(|| PathBuf::from(config_dir().map_or_else(
                 || {
@@ -105,12 +106,14 @@ impl VShell {
 
             let (tx, rx) = mpsc::channel();
 
+            let ipc_path = ipc.path().to_path_buf();
+            
             spawn_blocking(move || {
                 rx.recv().expect("to receive signal on channel");
 
                 info!("Shutting down vshell...");
 
-                // shutdown IPC
+                Ipc::shutdown(ipc_path);
                 exit(0);
             });
 

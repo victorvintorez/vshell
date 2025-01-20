@@ -25,3 +25,10 @@ macro_rules! send {
         $tx.send($msg).expect($crate::error::ERR_CHANNEL_SEND)
     };
 }
+
+#[macro_export]
+macro_rules! send_async {
+    ($tx:expr, $msg:expr) => {
+        $tx.send($msg).await.expect($crate::error::ERR_CHANNEL_SEND)
+    };
+}

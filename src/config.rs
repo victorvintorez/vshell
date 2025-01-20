@@ -2,7 +2,7 @@ use std::env;
 use std::path::PathBuf;
 use color_eyre::Report;
 use serde::Deserialize;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, warn};
 use universal_config::ConfigLoader;
 
 pub fn load_config(config_dir: Option<PathBuf>) -> (Config, PathBuf) {
