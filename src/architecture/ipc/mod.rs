@@ -1,9 +1,11 @@
 mod server;
-mod request;
-mod response;
+pub(crate) mod request;
+pub(crate) mod response;
+mod client;
 
 use std::path::{Path, PathBuf};
 use tracing::warn;
+use crate::fl;
 
 #[derive(Debug)]
 pub struct Ipc {
@@ -17,7 +19,7 @@ impl Ipc {
             .join("vshell.sock");
         
         if format!("{}", ipc_socket.display()).len() > 100 {
-            warn!("The IPC socket file's absolute path is too long. This may cause issues with some systems.");
+            warn!("{}", fl!("architecture-ipc_warn_ipc-socket-length"));
         }
         
         Self {

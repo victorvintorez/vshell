@@ -1,6 +1,5 @@
 mod architecture;
 mod config;
-mod error;
 mod logging;
 mod macros;
 
@@ -18,7 +17,8 @@ use std::sync::{mpsc, Arc, OnceLock};
 use tokio::runtime::Runtime;
 use tokio::task::JoinHandle;
 use tracing::{debug, error, info};
-use crate::architecture::theme::style::{load_styles, StyleExt};
+use crate::architecture::cli;
+use crate::architecture::theme::css::{load_styles, StyleExt};
 use crate::architecture::ipc::Ipc;
 
 fn main() {
@@ -27,11 +27,21 @@ fn main() {
     let args = architecture::cli::Args::parse();
 
     match args.command {
-        Some(command) => {
+        Some(request) => {
             let rt = create_runtime();
             rt.block_on(async move {
-                // SEND IPC COMMAND
-            })
+                let ipc = Ipc::new();
+                match ipc.send(request, args.debug).await {
+                    Ok(res) => {
+                        if args.debug {
+                            debug!("Response: {:?}", res);
+                        }
+                        
+                        cli::handle_response(res);
+                    }
+                    Err(e) => error!("{:?}", e),
+                };
+            });
         }
         None => VShell::new(args.config_path).start(args.style_path),
     }
@@ -50,7 +60,7 @@ impl VShell {
     }
 
     fn start(self, style_path: Option<PathBuf>) {
-        info!("Starting vshell {}...", env!("CARGO_PKG_VERSION"));
+        info!("{}", fl!("main_info_starting-vshell", pkgversion = env!("CARGO_PKG_VERSION")));
 
         let app = gtk4::Application::builder()
             .application_id("dev.vintorez.vshell")
@@ -62,13 +72,12 @@ impl VShell {
 
         let instance = Rc::new(self);
         let instance2 = instance.clone();
-        let args = Rc::clone(&instance);
 
         // start wayland client
 
         app.connect_activate(move |app| {
             if running.load(Ordering::Relaxed) {
-                info!("vshell is already running");
+                info!("{}", fl!("main_info_vshell-running"));
                 return;
             }
 
@@ -79,7 +88,7 @@ impl VShell {
 
             let mut style_path = style_path.clone().unwrap_or_else(|| PathBuf::from(config_dir().map_or_else(
                 || {
-                    error!("Failed to get style path");
+                    error!("{}", fl!("main_err_style-path-fail"));
                     exit(1);
                 },
                 |dir| dir.join("vshell"),
@@ -90,16 +99,16 @@ impl VShell {
                     if style_path.is_dir() {
                         style_path = style_path.join(format!("style.{ext}"))
                     };
-                    let pretty_path = style_path.parent().expect("to have parent directory")
+                    let pretty_path = style_path.parent().expect(&*fl!("main_expect_style-parent-dir"))
                         .canonicalize()
                         .map_err(Report::new)
-                        .unwrap_or_else(|_| env::current_dir().expect("to have current directory"));
+                        .unwrap_or_else(|_| env::current_dir().expect(&*fl!("main_expect_style-current-dir")));
                     debug!("Using style.{} from: {}/", ext, pretty_path.display());
                     load_styles(style_path, ext, app.clone());
                 }
                 None => {
                     error!(
-                        "Failed to find style.sass, style.scss, or style.css in config directory"
+                        "{}", fl!("main_err_style-file-fail", path = format!("{:?}", style_path))
                     );
                 }
             }
@@ -109,16 +118,16 @@ impl VShell {
             let ipc_path = ipc.path().to_path_buf();
             
             spawn_blocking(move || {
-                rx.recv().expect("to receive signal on channel");
+                rx.recv().expect(&*fl!("main_expect_rx-receive-signal"));
 
-                info!("Shutting down vshell...");
+                info!("{}", fl!("main_info_vshell-shutdown"));
 
                 Ipc::shutdown(ipc_path);
                 exit(0);
             });
 
-            ctrlc::set_handler(move || tx.send(()).expect("to send signal on channel"))
-                .expect("to set ctrl-c handler");
+            ctrlc::set_handler(move || tx.send(()).expect(&*fl!("main_expect_tx-send-signal")))
+                .expect(&*fl!("main_expect_ctrl-c-handler"));
 
             let hold = app.hold();
             send!(activate_tx, hold);
@@ -144,7 +153,7 @@ fn create_runtime() -> Runtime {
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
-        .expect("to create runtime")
+        .expect(&*fl!("main_expect_tokio-runtime"))
 }
 
 pub fn spawn<F>(f: F) -> JoinHandle<F::Output>

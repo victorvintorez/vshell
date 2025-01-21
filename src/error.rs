@@ -1,1 +1,0 @@
-pub const ERR_CHANNEL_SEND: &str = "Failed to send message on channel";

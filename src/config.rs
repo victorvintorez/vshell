@@ -4,11 +4,12 @@ use color_eyre::Report;
 use serde::Deserialize;
 use tracing::{debug, error, warn};
 use universal_config::ConfigLoader;
+use crate::fl;
 
 pub fn load_config(config_dir: Option<PathBuf>) -> (Config, PathBuf) {
     let (config, dir) = match config_dir {
         Some(conf_dir) => {
-            (ConfigLoader::load(&conf_dir), conf_dir.parent().map(PathBuf::from).ok_or_else(|| Report::msg("Failed to get parent directory of config directory")))
+            (ConfigLoader::load(&conf_dir), conf_dir.parent().map(PathBuf::from).ok_or_else(|| Report::msg(fl!("config_error_config-parent-dir"))))
         }
         None => {
             let config_loader = ConfigLoader::new("vshell");
@@ -20,15 +21,15 @@ pub fn load_config(config_dir: Option<PathBuf>) -> (Config, PathBuf) {
     };
 
     let config = config.unwrap_or_else(|err| {
-        error!("Failed to load config: {}", err);
-        warn!("Using default config");
+        error!("{}", fl!("config_error_config-file-fail", error = format!("{:?}", err)));
+        warn!("{}", fl!("config_warn_using-default-config"));
         
         Config::default()
     });
     
     let dir = dir.and_then(|dir| dir.canonicalize().map_err(Report::new)).unwrap_or_else(|_| env::current_dir().expect("to have current directory"));
     
-    debug!("Using config.toml from: {}/", dir.display());
+    debug!("{}", fl!("config_debug_config-file-load", path = dir.clone().into_os_string().into_string().unwrap()));
     
     (config, dir)
 }

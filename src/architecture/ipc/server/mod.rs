@@ -10,7 +10,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{UnixListener, UnixStream};
 use tokio::sync::mpsc::{Receiver, Sender};
 use tracing::{debug, error, info, warn};
-use crate::{glib_recv_mpsc, send_async, spawn, try_send, VShell};
+use crate::{glib_recv_mpsc, send_async, spawn, try_send, fl, VShell};
 use crate::architecture::ipc::request::Request;
 use crate::architecture::ipc::response::Response;
 use crate::architecture::ipc::server::debug::handle_request;
@@ -24,17 +24,17 @@ impl Ipc {
         let path = self.path.clone();
 
         if path.exists() {
-            warn!("The IPC socket file already exists. Removing it.");
+            warn!("{}", fl!("architecture-ipc-server_warn_ipc-socket-exists"));
             Self::shutdown(&path);
         }
 
         spawn(async move {
-            info!("Starting IPC on {}", path.display());
+            info!("{}", fl!("architecture-ipc-server_info_ipc-socket-starting", path = format!("{:?}", path)));
 
             let listener = match UnixListener::bind(&path) {
                 Ok(listener) => listener,
                 Err(e) => {
-                    error!("Failed to bind IPC socket: {:?}", e);
+                    error!("{}", fl!("architecture-ipc-server_error_ipc-socket-bind-fail", error = format!("{:?}", e)));
                     return;
                 }
             };
@@ -43,10 +43,10 @@ impl Ipc {
                 match listener.accept().await {
                     Ok((stream, _addr)) => {
                         if let Err(e) = Self::handle_connection(stream, &req_tx, &mut res_rx).await {
-                            error!("{:?}", e);
+                            error!("{}", fl!("architecture-ipc-server_error_handle-connection-fail", error = format!("{:?}", e)));
                         }
                     }
-                    Err(e) => error!("{:?}", e)
+                    Err(e) => error!("{}", fl!("architecture-ipc-server_error_ipc-stream-accept-fail", error = format!("{:?}", e))),
                 }
             }
         });
@@ -70,15 +70,15 @@ impl Ipc {
 
         let bytes = stream_read.read(&mut read_buffer).await?;
 
-        let request = bincode::deserialize::<Request>(&read_buffer[..bytes])?;
+        let req = rmp_serde::from_slice::<Request>(&read_buffer[..bytes])?;
 
-        debug!("Received request: {:?}", request);
+        debug!("{}", fl!("architecture-ipc-server_debug_ipc-received-request", request = format!("{:?}", req)));
 
-        send_async!(req_tx, request);
+        send_async!(req_tx, req);
 
         let response = res_rx.recv().await.unwrap_or(Response::Error { message: None });
 
-        let response = bincode::serialize(&response)?;
+        let response = rmp_serde::to_vec(&response)?;
 
         stream_write.write_all(&response).await?;
         stream_write.shutdown().await?;
@@ -98,7 +98,7 @@ impl Ipc {
     
     pub fn shutdown<P: AsRef<Path>>(path: P) {
         if let Err(e) = std::fs::remove_file(path) {
-            error!("Failed to remove IPC socket file: {:?}", e);
+            error!("{}", fl!("architecture-ipc-server_error_ipc-shutdown-fail", error = format!("{:?}", e)));
         }
     }
 }

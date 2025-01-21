@@ -11,6 +11,7 @@ use tracing_error::ErrorLayer;
 use tracing_subscriber::fmt::{Layer, MakeWriter};
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::{fmt, EnvFilter};
+use crate::fl;
 
 struct MakeFileWriter {
     file_writer: NonBlocking,
@@ -41,7 +42,7 @@ pub fn setup_logging() -> Result<WorkerGuard> {
     eyre_hook.install()?;
 
     panic::set_hook(Box::new(move |panic_info| {
-        error!("Panic: {}", panic_hook.panic_report(panic_info));
+        error!("{}", fl!("logging_error_panic", error = format!("{}", panic_hook.panic_report(panic_info))));
     }));
 
     Ok(guard)

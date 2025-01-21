@@ -1,0 +1,4 @@
+fallback_language = "en"
+subcrates = ["architecture"]
+[fluent]
+assets_dir = "i18n"

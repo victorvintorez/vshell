@@ -1,4 +1,4 @@
-use crate::{glib_recv_mpsc, spawn, try_send};
+use crate::{glib_recv_mpsc, spawn, try_send, fl};
 use std::env;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -14,7 +14,7 @@ pub fn load_styles(style_path: PathBuf, style_type: StyleExt, app: Application) 
     let style_path = if style_path.is_absolute() {
         style_path
     } else {
-        env::current_dir().expect("to exist").join(style_path)
+        env::current_dir().expect(&*fl!("architecture-theme-style_expect_style-path-current-dir")).join(style_path)
     };
 
     let provider = CssProvider::new();
@@ -22,7 +22,7 @@ pub fn load_styles(style_path: PathBuf, style_type: StyleExt, app: Application) 
     provider.load_from_string(css_to_string(style_path.clone(), style_type).as_str());
 
     gtk4::style_context_add_provider_for_display(
-        &gdk::Display::default().expect("to exist"),
+        &gdk::Display::default().expect(&*fl!("architecture-theme-style_expect_gdk-display-default")),
         &provider,
         gtk4::STYLE_PROVIDER_PRIORITY_USER,
     );
@@ -32,24 +32,24 @@ pub fn load_styles(style_path: PathBuf, style_type: StyleExt, app: Application) 
     spawn(async move {
         let style_path2 = style_path.clone();
         let mut watcher = recommended_watcher(move |res: Result<Event, Error>| match res {
-            Ok(event) if matches!(event.kind, EventKind::Modify(ModifyKind::Data(_))) => {
-                debug!("{event:?}");
-                if event.paths.first().is_some_and(|p| p == &style_path2) {
+            Ok(ev) if matches!(ev.kind, EventKind::Modify(ModifyKind::Data(_))) => {
+                debug!("{}", fl!("architecture-theme-style_debug_style-watch-event", event = format!("{:?}", ev)));
+                if ev.paths.first().is_some_and(|p| p == &style_path2) {
                     try_send!(tx, style_path2.clone());
                 }
             }
-            Err(e) => error!("Error watching style file: {:?}", e),
+            Err(e) => error!("{}", fl!("architecture-theme-style_error_style-watch-fail", error = format!("{:?}", e))),
             _ => {}
         })
-            .expect("to watch style file");
+            .expect(&*fl!("architecture-theme-style_expect_build-style-watcher"));
 
-        let dir_path = style_path.parent().expect("to exist");
+        let dir_path = style_path.parent().expect(&*fl!("architecture-theme-style_expect_style-path-parent-dir"));
 
         watcher
             .watch(dir_path, RecursiveMode::NonRecursive)
-            .expect("to start watching style file");
+            .expect(&*fl!("architecture-theme-style_expect_start-style-watcher"));
 
-        debug!("Watching style file: {:?}", style_path.display());
+        debug!("{}", fl!("architecture-theme-style_debug_style-file-watching", path = format!("{:?}", style_path.display())));
 
         loop {
             sleep(Duration::from_secs(1)).await;
@@ -57,7 +57,7 @@ pub fn load_styles(style_path: PathBuf, style_type: StyleExt, app: Application) 
     });
 
     glib_recv_mpsc!(rx, path => {
-        info!("Reloading style");
+        info!("{}", fl!("architecture-theme-style_info_style-file-reloading", path = format!("{:?}", path.display())));
         provider.load_from_string(css_to_string(path, style_type).as_str());
         for win in app.windows() {
             win.queue_draw();
@@ -69,21 +69,21 @@ fn css_to_string(style_path: PathBuf, style_type: StyleExt) -> String {
     match style_type {
         StyleExt::Sass => grass::from_path(style_path, &grass::Options::default()).map_or_else(
             |err| {
-                error!("Failed to load style.sass: {}", err);
+                error!("{}", fl!("architecture-theme-style_error_style-file-load-sass", error = format!("{:?}", err)));
                 String::new()
             },
             |style| style,
         ),
         StyleExt::Scss => grass::from_path(style_path, &grass::Options::default()).map_or_else(
             |err| {
-                error!("Failed to load style.scss: {}", err);
+                error!("{}", fl!("architecture-theme-style_error_style-file-load-scss", error = format!("{:?}", err)));
                 String::new()
             },
             |style| style,
         ),
         StyleExt::Css => std::fs::read_to_string(style_path).map_or_else(
             |err| {
-                error!("Failed to load style.css: {}", err);
+                error!("{}", fl!("architecture-theme-style_error_style-file-load-css", error = format!("{:?}", err)));
                 String::new()
             },
             |style| style,
