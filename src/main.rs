@@ -1,6 +1,5 @@
 mod architecture;
 mod config;
-mod logging;
 mod macros;
 
 use clap::Parser;
@@ -20,6 +19,7 @@ use tracing::{debug, error, info};
 use crate::architecture::cli;
 use crate::architecture::theme::css::{load_styles, StyleExt};
 use crate::architecture::ipc::Ipc;
+use crate::architecture::logging;
 
 fn main() {
     let _guard = logging::setup_logging();
