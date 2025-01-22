@@ -15,21 +15,25 @@ macro_rules! glib_recv_mpsc {
 #[macro_export]
 macro_rules! try_send {
     ($tx:expr, $msg:expr) => {
-        $tx.try_send($msg).expect(&*fl!("macros_error_channel-send-fail"))
+        $tx.try_send($msg)
+            .expect(&*fl!("macros_error_channel-send-fail"))
     };
 }
 
 #[macro_export]
 macro_rules! send {
     ($tx:expr, $msg:expr) => {
-        $tx.send($msg).expect(&*fl!("macros_error_channel-send-fail"))
+        $tx.send($msg)
+            .expect(&*fl!("macros_error_channel-send-fail"))
     };
 }
 
 #[macro_export]
 macro_rules! send_async {
     ($tx:expr, $msg:expr) => {
-        $tx.send($msg).await.expect(&*fl!("macros_error_channel-send-fail"))
+        $tx.send($msg)
+            .await
+            .expect(&*fl!("macros_error_channel-send-fail"))
     };
 }
 

@@ -1,2 +1,2 @@
-mod redb;
 mod file;
+mod redb;

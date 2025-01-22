@@ -2,6 +2,10 @@ mod architecture;
 mod config;
 mod macros;
 
+use crate::architecture::cli;
+use crate::architecture::ipc::Ipc;
+use crate::architecture::logging;
+use crate::architecture::theme::css::{load_styles, StyleExt};
 use clap::Parser;
 use color_eyre::Report;
 use dirs::config_dir;
@@ -16,10 +20,6 @@ use std::sync::{mpsc, Arc, OnceLock};
 use tokio::runtime::Runtime;
 use tokio::task::JoinHandle;
 use tracing::{debug, error, info};
-use crate::architecture::cli;
-use crate::architecture::theme::css::{load_styles, StyleExt};
-use crate::architecture::ipc::Ipc;
-use crate::architecture::logging;
 
 fn main() {
     let _guard = logging::setup_logging();
@@ -36,7 +36,7 @@ fn main() {
                         if args.debug {
                             debug!("Response: {:?}", res);
                         }
-                        
+
                         cli::handle_response(res);
                     }
                     Err(e) => error!("{:?}", e),
@@ -60,7 +60,13 @@ impl VShell {
     }
 
     fn start(self, style_path: Option<PathBuf>) {
-        info!("{}", fl!("main_info_starting-vshell", pkgversion = env!("CARGO_PKG_VERSION")));
+        info!(
+            "{}",
+            fl!(
+                "main_info_starting-vshell",
+                pkgversion = env!("CARGO_PKG_VERSION")
+            )
+        );
 
         let app = gtk4::Application::builder()
             .application_id("dev.vintorez.vshell")
@@ -86,29 +92,39 @@ impl VShell {
             let ipc = Ipc::new();
             ipc.start(app, instance.clone());
 
-            let mut style_path = style_path.clone().unwrap_or_else(|| PathBuf::from(config_dir().map_or_else(
-                || {
-                    error!("{}", fl!("main_err_style-path-fail"));
-                    exit(1);
-                },
-                |dir| dir.join("vshell"),
-            )));
-            
+            let mut style_path = style_path.clone().unwrap_or_else(|| {
+                PathBuf::from(config_dir().map_or_else(
+                    || {
+                        error!("{}", fl!("main_err_style-path-fail"));
+                        exit(1);
+                    },
+                    |dir| dir.join("vshell"),
+                ))
+            });
+
             match StyleExt::from_path(&style_path) {
                 Some(ext) => {
                     if style_path.is_dir() {
                         style_path = style_path.join(format!("style.{ext}"))
                     };
-                    let pretty_path = style_path.parent().expect(&*fl!("main_expect_style-parent-dir"))
+                    let pretty_path = style_path
+                        .parent()
+                        .expect(&*fl!("main_expect_style-parent-dir"))
                         .canonicalize()
                         .map_err(Report::new)
-                        .unwrap_or_else(|_| env::current_dir().expect(&*fl!("main_expect_style-current-dir")));
+                        .unwrap_or_else(|_| {
+                            env::current_dir().expect(&*fl!("main_expect_style-current-dir"))
+                        });
                     debug!("Using style.{} from: {}/", ext, pretty_path.display());
                     load_styles(style_path, ext, app.clone());
                 }
                 None => {
                     error!(
-                        "{}", fl!("main_err_style-file-fail", path = format!("{:?}", style_path))
+                        "{}",
+                        fl!(
+                            "main_err_style-file-fail",
+                            path = format!("{:?}", style_path)
+                        )
                     );
                 }
             }
@@ -116,7 +132,7 @@ impl VShell {
             let (tx, rx) = mpsc::channel();
 
             let ipc_path = ipc.path().to_path_buf();
-            
+
             spawn_blocking(move || {
                 rx.recv().expect(&*fl!("main_expect_rx-receive-signal"));
 

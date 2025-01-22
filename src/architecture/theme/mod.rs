@@ -1,3 +1,3 @@
 pub(crate) mod css;
-mod template;
 mod md3;
+mod template;
