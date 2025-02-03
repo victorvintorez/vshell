@@ -48,3 +48,8 @@ architecture-ipc-server-debug_string_pong = Pong
 architecture-ipc-client_error_ipc-socket-connect-fail = Failed to connect to IPC socket
 architecture-ipc-client_error_ipc-socket-connect-suggestion = Make sure the main vShell instance is running
 architecture-ipc-client_debug_ipc-sent-request = IPC Sent Request: {$request}
+
+architecture-storage-redb_debug_database-opened = Opened database: {$path}
+architecture-storage-redb_error_database-open-fail = Failed to open database: {$error}
+architecture-storage-redb_debug_database-created = Created database: {$path}
+architecture-storage-redb_error_database-create-fail = Failed to create database: {$error}
