@@ -4,6 +4,7 @@ use gtk4::{gdk, glib, Application, CssProvider};
 use notify::event::ModifyKind;
 use notify::{recommended_watcher, Error, Event, EventKind, RecursiveMode, Watcher};
 use std::env;
+use std::path::Path;
 use std::path::PathBuf;
 use std::time::Duration;
 use tokio::sync::mpsc;
@@ -15,7 +16,7 @@ pub fn load_styles(style_path: PathBuf, style_type: StyleExt, app: Application) 
         style_path
     } else {
         env::current_dir()
-            .expect(&*fl!(
+            .expect(&fl!(
                 "architecture-theme-style_expect_style-path-current-dir"
             ))
             .join(style_path)
@@ -27,7 +28,7 @@ pub fn load_styles(style_path: PathBuf, style_type: StyleExt, app: Application) 
 
     gtk4::style_context_add_provider_for_display(
         &gdk::Display::default()
-            .expect(&*fl!("architecture-theme-style_expect_gdk-display-default")),
+            .expect(&fl!("architecture-theme-style_expect_gdk-display-default")),
         &provider,
         gtk4::STYLE_PROVIDER_PRIORITY_USER,
     );
@@ -58,15 +59,15 @@ pub fn load_styles(style_path: PathBuf, style_type: StyleExt, app: Application) 
             ),
             _ => {}
         })
-        .expect(&*fl!("architecture-theme-style_expect_build-style-watcher"));
+        .expect(&fl!("architecture-theme-style_expect_build-style-watcher"));
 
-        let dir_path = style_path.parent().expect(&*fl!(
+        let dir_path = style_path.parent().expect(&fl!(
             "architecture-theme-style_expect_style-path-parent-dir"
         ));
 
         watcher
             .watch(dir_path, RecursiveMode::NonRecursive)
-            .expect(&*fl!("architecture-theme-style_expect_start-style-watcher"));
+            .expect(&fl!("architecture-theme-style_expect_start-style-watcher"));
 
         debug!(
             "{}",
@@ -81,9 +82,9 @@ pub fn load_styles(style_path: PathBuf, style_type: StyleExt, app: Application) 
         }
     });
 
-    glib_recv_mpsc!(rx, path => {
-        info!("{}", fl!("architecture-theme-style_info_style-file-reloading", path = format!("{:?}", path.display())));
-        provider.load_from_string(css_to_string(path, style_type).as_str());
+    glib_recv_mpsc!(rx, file_path => {
+        info!("{}", fl!("architecture-theme-style_info_style-file-reloading", path = format!("{:?}", file_path.display())));
+        provider.load_from_string(css_to_string(file_path, style_type).as_str());
         for win in app.windows() {
             win.queue_draw();
         };
@@ -92,8 +93,8 @@ pub fn load_styles(style_path: PathBuf, style_type: StyleExt, app: Application) 
 
 fn css_to_string(style_path: PathBuf, style_type: StyleExt) -> String {
     match style_type {
-        StyleExt::Sass => grass::from_path(style_path, &grass::Options::default()).map_or_else(
-            |err| {
+        StyleExt::Sass => {
+            grass::from_path(style_path, &grass::Options::default()).unwrap_or_else(|err| {
                 error!(
                     "{}",
                     fl!(
@@ -102,11 +103,10 @@ fn css_to_string(style_path: PathBuf, style_type: StyleExt) -> String {
                     )
                 );
                 String::new()
-            },
-            |style| style,
-        ),
-        StyleExt::Scss => grass::from_path(style_path, &grass::Options::default()).map_or_else(
-            |err| {
+            })
+        }
+        StyleExt::Scss => {
+            grass::from_path(style_path, &grass::Options::default()).unwrap_or_else(|err| {
                 error!(
                     "{}",
                     fl!(
@@ -115,22 +115,18 @@ fn css_to_string(style_path: PathBuf, style_type: StyleExt) -> String {
                     )
                 );
                 String::new()
-            },
-            |style| style,
-        ),
-        StyleExt::Css => std::fs::read_to_string(style_path).map_or_else(
-            |err| {
-                error!(
-                    "{}",
-                    fl!(
-                        "architecture-theme-style_error_style-file-load-css",
-                        error = format!("{:?}", err)
-                    )
-                );
-                String::new()
-            },
-            |style| style,
-        ),
+            })
+        }
+        StyleExt::Css => std::fs::read_to_string(style_path).unwrap_or_else(|err| {
+            error!(
+                "{}",
+                fl!(
+                    "architecture-theme-style_error_style-file-load-css",
+                    error = format!("{:?}", err)
+                )
+            );
+            String::new()
+        }),
     }
 }
 
@@ -141,25 +137,25 @@ pub enum StyleExt {
     Css,
 }
 
-impl StyleExt {
-    pub fn from_path(style_path: &PathBuf) -> Option<Self> {
+impl TryFrom<&Path> for StyleExt {
+    type Error = &'static str;
+
+    fn try_from(style_path: &Path) -> Result<Self, Self::Error> {
         if style_path.is_file() {
             match style_path.extension().and_then(|ext| ext.to_str()) {
-                Some("sass") => Some(StyleExt::Sass),
-                Some("scss") => Some(StyleExt::Scss),
-                Some("css") => Some(StyleExt::Css),
-                _ => None,
+                Some("sass") => Ok(StyleExt::Sass),
+                Some("scss") => Ok(StyleExt::Scss),
+                Some("css") => Ok(StyleExt::Css),
+                _ => Err("Not a valid style file"),
             }
+        } else if style_path.join("style.sass").exists() {
+            Ok(StyleExt::Sass)
+        } else if style_path.join("style.scss").exists() {
+            Ok(StyleExt::Scss)
+        } else if style_path.join("style.css").exists() {
+            Ok(StyleExt::Css)
         } else {
-            if style_path.join("style.sass").exists() {
-                Some(StyleExt::Sass)
-            } else if style_path.join("style.scss").exists() {
-                Some(StyleExt::Scss)
-            } else if style_path.join("style.css").exists() {
-                Some(StyleExt::Css)
-            } else {
-                None
-            }
+            Err("Style File not found")
         }
     }
 }

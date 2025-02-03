@@ -47,7 +47,6 @@ fn main() {
     }
 }
 
-#[derive(Debug)]
 pub struct VShell {
     config: config::Config,
     config_dir: PathBuf,
@@ -92,33 +91,33 @@ impl VShell {
             let ipc = Ipc::new();
             ipc.start(app, instance.clone());
 
-            let mut style_path = style_path.clone().unwrap_or_else(|| {
-                PathBuf::from(config_dir().map_or_else(
+            let mut style_path = style_path.clone().unwrap_or_else(|| { 
+                config_dir().map_or_else(
                     || {
                         error!("{}", fl!("main_err_style-path-fail"));
                         exit(1);
                     },
                     |dir| dir.join("vshell"),
-                ))
+                )
             });
 
-            match StyleExt::from_path(&style_path) {
-                Some(ext) => {
+            match StyleExt::try_from(style_path.as_path()) {
+                Ok(ext) => {
                     if style_path.is_dir() {
                         style_path = style_path.join(format!("style.{ext}"))
                     };
                     let pretty_path = style_path
                         .parent()
-                        .expect(&*fl!("main_expect_style-parent-dir"))
+                        .expect(&fl!("main_expect_style-parent-dir"))
                         .canonicalize()
                         .map_err(Report::new)
                         .unwrap_or_else(|_| {
-                            env::current_dir().expect(&*fl!("main_expect_style-current-dir"))
+                            env::current_dir().expect(&fl!("main_expect_style-current-dir"))
                         });
                     debug!("Using style.{} from: {}/", ext, pretty_path.display());
                     load_styles(style_path, ext, app.clone());
                 }
-                None => {
+                Err(e) => {
                     error!(
                         "{}",
                         fl!(
@@ -134,7 +133,7 @@ impl VShell {
             let ipc_path = ipc.path().to_path_buf();
 
             spawn_blocking(move || {
-                rx.recv().expect(&*fl!("main_expect_rx-receive-signal"));
+                rx.recv().expect(&fl!("main_expect_rx-receive-signal"));
 
                 info!("{}", fl!("main_info_vshell-shutdown"));
 
@@ -142,8 +141,8 @@ impl VShell {
                 exit(0);
             });
 
-            ctrlc::set_handler(move || tx.send(()).expect(&*fl!("main_expect_tx-send-signal")))
-                .expect(&*fl!("main_expect_ctrl-c-handler"));
+            ctrlc::set_handler(move || tx.send(()).expect(&fl!("main_expect_tx-send-signal")))
+                .expect(&fl!("main_expect_ctrl-c-handler"));
 
             let hold = app.hold();
             send!(activate_tx, hold);
@@ -169,7 +168,7 @@ fn create_runtime() -> Runtime {
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
-        .expect(&*fl!("main_expect_tokio-runtime"))
+        .expect(&fl!("main_expect_tokio-runtime"))
 }
 
 pub fn spawn<F>(f: F) -> JoinHandle<F::Output>

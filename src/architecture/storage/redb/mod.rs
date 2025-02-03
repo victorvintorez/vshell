@@ -23,7 +23,7 @@ pub static DATABASE: Lazy<Database> = Lazy::new(|| {
         .join("vshell.db");
     let database: Database;
 
-    if let true = Path::exists(&*db_path) {
+    if Path::exists(&db_path) {
         match Database::open(&db_path) {
             Ok(db) => {
                 database = db;
