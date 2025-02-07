@@ -1,8 +1,8 @@
 use crate::fl;
 use color_eyre::Report;
 use serde::Deserialize;
-use std::env;
 use std::path::PathBuf;
+use std::{collections::HashMap, env};
 use tracing::{debug, error, warn};
 use universal_config::ConfigLoader;
 
@@ -52,8 +52,21 @@ pub fn load_config(config_dir: Option<PathBuf>) -> (Config, PathBuf) {
     (config, dir)
 }
 
-#[derive(Deserialize, Default, Debug)]
+#[derive(Deserialize, Default, Debug, Clone)]
 pub struct Config {
     #[serde(default)]
     pub monitor: String,
+    pub templates: Option<HashMap<String, TemplateConfig>>,
+}
+
+#[derive(Deserialize, Default, Debug, Clone)]
+pub struct TemplateConfig {
+    #[serde(alias = "tmpl")]
+    pub template: String,
+    #[serde(alias = "dest")]
+    pub target: String,
+    #[serde(alias = "pre_cmd")]
+    pub pre: Option<String>,
+    #[serde(alias = "post_cmd", alias = "reload")]
+    pub post: Option<String>,
 }

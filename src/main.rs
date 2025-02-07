@@ -6,8 +6,10 @@ use crate::architecture::cli;
 use crate::architecture::ipc::Ipc;
 use crate::architecture::logging;
 use crate::architecture::theme::css::{load_styles, StyleExt};
+use crate::architecture::theme::md3::ThemeManager;
 use clap::Parser;
 use color_eyre::Report;
+use config::Config;
 use dirs::config_dir;
 use gtk4::prelude::*;
 use std::env;
@@ -47,15 +49,24 @@ fn main() {
     }
 }
 
-pub struct VShell {
-    config: config::Config,
+pub struct VShell<'a> {
+    config: Config,
     config_dir: PathBuf,
+    theme: ThemeManager<'a>,
 }
 
-impl VShell {
+impl VShell<'_> {
     fn new(config_dir: Option<PathBuf>) -> Self {
         let (config, config_dir) = config::load_config(config_dir);
-        Self { config, config_dir }
+
+        let templates = config.templates.clone();
+        let theme = ThemeManager::new(&config.templates);
+
+        Self {
+            config,
+            config_dir,
+            theme,
+        }
     }
 
     fn start(self, style_path: Option<PathBuf>) {
@@ -75,7 +86,7 @@ impl VShell {
 
         let (activate_tx, activate_rx) = mpsc::channel();
 
-        let instance = Rc::new(self);
+        let instance = Arc::new(self);
         let instance2 = instance.clone();
 
         // start wayland client
@@ -91,7 +102,7 @@ impl VShell {
             let ipc = Ipc::new();
             ipc.start(app, instance.clone());
 
-            let mut style_path = style_path.clone().unwrap_or_else(|| { 
+            let mut style_path = style_path.clone().unwrap_or_else(|| {
                 config_dir().map_or_else(
                     || {
                         error!("{}", fl!("main_err_style-path-fail"));
@@ -117,7 +128,7 @@ impl VShell {
                     debug!("Using style.{} from: {}/", ext, pretty_path.display());
                     load_styles(style_path, ext, app.clone());
                 }
-                Err(e) => {
+                Err(_e) => {
                     error!(
                         "{}",
                         fl!(

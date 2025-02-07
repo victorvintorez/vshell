@@ -10,6 +10,7 @@ use gtk4::glib;
 use gtk4::Application;
 use std::path::Path;
 use std::rc::Rc;
+use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{UnixListener, UnixStream};
 use tokio::sync::mpsc;
@@ -17,15 +18,15 @@ use tokio::sync::mpsc::{Receiver, Sender};
 use tracing::{debug, error, info, warn};
 
 impl Ipc {
-    pub fn start(&self, application: &Application, vshell: Rc<VShell>) {
+    pub fn start(&self, application: &Application, vshell: Arc<VShell>) {
         let (req_tx, req_rx) = mpsc::channel(32);
         let (res_tx, mut res_rx) = mpsc::channel(32);
 
-        let path = self.path.clone();
+        let ipc_path = self.path.clone();
 
-        if path.exists() {
+        if ipc_path.exists() {
             warn!("{}", fl!("architecture-ipc-server_warn_ipc-socket-exists"));
-            Self::shutdown(&path);
+            Self::shutdown(&ipc_path);
         }
 
         spawn(async move {
@@ -33,11 +34,11 @@ impl Ipc {
                 "{}",
                 fl!(
                     "architecture-ipc-server_info_ipc-socket-starting",
-                    path = format!("{:?}", path)
+                    path = format!("{:?}", ipc_path)
                 )
             );
 
-            let listener = match UnixListener::bind(&path) {
+            let listener = match UnixListener::bind(&ipc_path) {
                 Ok(listener) => listener,
                 Err(e) => {
                     error!(
@@ -123,7 +124,7 @@ impl Ipc {
     fn handle_request(
         request: Request,
         application: &Application,
-        vshell: &Rc<VShell>,
+        vshell: &Arc<VShell>,
     ) -> Response {
         match request {
             Request::Debug(request) => handle_request(request, application),

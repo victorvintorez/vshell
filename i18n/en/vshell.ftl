@@ -53,3 +53,6 @@ architecture-storage-redb_debug_database-opened = Opened database: {$path}
 architecture-storage-redb_error_database-open-fail = Failed to open database: {$error}
 architecture-storage-redb_debug_database-created = Created database: {$path}
 architecture-storage-redb_error_database-create-fail = Failed to create database: {$error}
+
+architecture-theme-md3_expect_wallpaper-read = to read wallpaper file
+architecture-theme-md3_expect_image-read = to parse image file

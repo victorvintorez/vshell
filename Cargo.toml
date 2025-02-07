@@ -35,6 +35,8 @@ rust-embed = "8.5.0"
 i18n-embed-fl = "0.9.3"
 once_cell = "1.20.2"
 redb = "2.4.0"
+upon = "0.8.1"
+material-colors = { version = "0.4.2", features = ["image", "serde"] }
 
 [build-dependencies]
 clap = { version = "4.5.27", features = ["derive"] }
