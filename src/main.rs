@@ -28,6 +28,8 @@ fn main() {
 
     let args = architecture::cli::Args::parse();
 
+    let vshell = VShell::new(args.config_path);
+
     match args.command {
         Some(request) => {
             let rt = create_runtime();
@@ -45,22 +47,22 @@ fn main() {
                 };
             });
         }
-        None => VShell::new(args.config_path).start(args.style_path),
+        None => vshell.start(args.style_path),
     }
 }
 
-pub struct VShell<'a> {
+pub struct VShell {
     config: Config,
     config_dir: PathBuf,
-    theme: ThemeManager<'a>,
+    theme: ThemeManager,
 }
 
-impl VShell<'_> {
+impl VShell {
     fn new(config_dir: Option<PathBuf>) -> Self {
         let (config, config_dir) = config::load_config(config_dir);
 
         let templates = config.templates.clone();
-        let theme = ThemeManager::new(&config.templates);
+        let theme = ThemeManager::new(templates);
 
         Self {
             config,
@@ -69,7 +71,7 @@ impl VShell<'_> {
         }
     }
 
-    fn start(self, style_path: Option<PathBuf>) {
+    fn start(&self, style_path: Option<PathBuf>) {
         info!(
             "{}",
             fl!(
@@ -86,7 +88,7 @@ impl VShell<'_> {
 
         let (activate_tx, activate_rx) = mpsc::channel();
 
-        let instance = Arc::new(self);
+        let instance = Rc::new(self);
         let instance2 = instance.clone();
 
         // start wayland client

@@ -10,14 +10,14 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::path::PathBuf;
 
-pub struct ThemeManager<'a> {
+pub struct ThemeManager {
     pub wallpaper_path: PathBuf,
     pub theme: Theme,
-    pub template_manager: TemplateManager<'a>,
+    pub template_manager: TemplateManager,
 }
 
-impl ThemeManager<'_> {
-    pub fn new<'a>(templates: &'a Option<HashMap<String, TemplateConfig>>) -> ThemeManager<'a> {
+impl ThemeManager {
+    pub fn new(templates: Option<HashMap<String, TemplateConfig>>) -> Self {
         let theme = ThemeBuilder::with_source(Argb::from_u32(0xffffffff)).build();
         let template_manager = TemplateManager::new(templates);
 

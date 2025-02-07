@@ -10,7 +10,6 @@ use gtk4::glib;
 use gtk4::Application;
 use std::path::Path;
 use std::rc::Rc;
-use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{UnixListener, UnixStream};
 use tokio::sync::mpsc;
@@ -18,7 +17,7 @@ use tokio::sync::mpsc::{Receiver, Sender};
 use tracing::{debug, error, info, warn};
 
 impl Ipc {
-    pub fn start(&self, application: &Application, vshell: Arc<VShell>) {
+    pub fn start(&self, application: &Application, vshell: Rc<&VShell>) {
         let (req_tx, req_rx) = mpsc::channel(32);
         let (res_tx, mut res_rx) = mpsc::channel(32);
 
@@ -124,7 +123,7 @@ impl Ipc {
     fn handle_request(
         request: Request,
         application: &Application,
-        vshell: &Arc<VShell>,
+        vshell: &Rc<&VShell>,
     ) -> Response {
         match request {
             Request::Debug(request) => handle_request(request, application),
