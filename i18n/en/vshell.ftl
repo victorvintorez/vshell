@@ -56,3 +56,7 @@ architecture-storage-redb_error_database-create-fail = Failed to create database
 
 architecture-theme-md3_expect_wallpaper-read = to read wallpaper file
 architecture-theme-md3_expect_image-read = to parse image file
+architecture-theme-template_info_templates-loading = Loading templates.
+architecture-theme-template_warn_template-not-found = Template for {$name} not found at {$path}
+architecture-theme-template_expect_template-target-dir = target to have parent directory
+architecture-theme-template_error_template-target-dir-fail = Failed to get target directory for template {$name}: {$path}
