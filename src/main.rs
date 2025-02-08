@@ -71,7 +71,7 @@ impl VShell {
         }
     }
 
-    fn start(&self, style_path: Option<PathBuf>) {
+    fn start(self, style_path: Option<PathBuf>) {
         info!(
             "{}",
             fl!(
@@ -127,7 +127,14 @@ impl VShell {
                         .unwrap_or_else(|_| {
                             env::current_dir().expect(&fl!("main_expect_style-current-dir"))
                         });
-                    debug!("Using style.{} from: {}/", ext, pretty_path.display());
+                    debug!(
+                        "{}",
+                        fl!(
+                            "main_debug_style-file-load",
+                            extension = format!("{:?}", ext),
+                            path = format!("{:?}", pretty_path)
+                        )
+                    );
                     load_styles(style_path, ext, app.clone());
                 }
                 Err(_e) => {
