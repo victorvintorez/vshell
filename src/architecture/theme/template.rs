@@ -166,7 +166,7 @@ impl TemplateManager {
     }
 
     pub fn theme_to_renderdata(theme: &Theme) -> Result<Value, Report> {
-        // TODO: Transform theme into Colors
+        // Impl Theme to Render Data
     }
 }
 

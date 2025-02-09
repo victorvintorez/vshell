@@ -1,8 +1,7 @@
-pub(crate) mod css;
 pub(crate) mod color;
-pub(crate) mod scheme;
-pub(crate) mod template;
+pub(crate) mod css;
 pub(crate) mod format;
+pub(crate) mod template;
 
 use crate::architecture::theme::template::TemplateManager;
 use crate::config::TemplateConfig;
@@ -18,6 +17,7 @@ use std::path::PathBuf;
 
 pub struct ThemeManager {
     pub wallpaper_path: PathBuf,
+    pub source_color: Argb,
     pub theme: Theme,
     pub template_manager: TemplateManager,
 }
@@ -29,6 +29,7 @@ impl ThemeManager {
 
         ThemeManager {
             wallpaper_path: Path::new("").to_path_buf(),
+            source_color: Argb::from_u32(0xffffffff),
             theme,
             template_manager,
         }
