@@ -2,12 +2,16 @@ use crate::config::TemplateConfig;
 use crate::fl;
 use color_eyre::Report;
 use material_colors::theme::Theme;
-use std::collections::HashMap;
 use std::format;
+use std::iter::zip;
 use std::path::Path;
 use std::process::Command;
+use std::result::Result;
+use std::{collections::HashMap, rc::Rc};
 use tracing::{error, info, warn};
-use upon::{Engine, Value};
+use upon::{value, Engine, Value};
+
+use super::color::{transform_color, ColorVariants, SchemesEnum};
 
 pub struct TemplateManager {
     pub templates: Option<HashMap<String, TemplateConfig>>,
@@ -20,7 +24,7 @@ impl TemplateManager {
         TemplateManager { templates, engine }
     }
 
-    pub fn generate(&self, theme: &Theme) {
+    pub fn generate(&self, theme: Rc<Theme>) {
         if let Some(templates) = &self.templates {
             info!(
                 "{:?}",
@@ -165,8 +169,39 @@ impl TemplateManager {
         }
     }
 
-    pub fn theme_to_renderdata(theme: &Theme) -> Result<Value, Report> {
-        // Impl Theme to Render Data
+    pub fn theme_to_renderdata(
+        theme: &Theme,
+        wallpaper_path: Option<&String>,
+        default_scheme: SchemesEnum,
+    ) -> Result<Value, Report> {
+        let mut colors: HashMap<String, ColorVariants> = Default::default();
+
+        // FIXME: figure out why this isnt working
+        for ((name, light), (_, dark)) in zip(
+            theme.schemes.light.into_iter(),
+            theme.schemes.dark.into_iter(),
+        ) {
+            colors.insert(
+                name.to_string(),
+                transform_color(&name, theme.source, default_scheme, light, dark)?,
+            );
+        }
+
+        colors.insert(
+            String::from("source_color"),
+            transform_color(
+                "source_color",
+                theme.source,
+                default_scheme,
+                theme.source,
+                theme.source,
+            )?,
+        );
+
+        Ok(value! {
+            colors: colors,
+            wallpaper_path: wallpaper_path,
+        })
     }
 }
 

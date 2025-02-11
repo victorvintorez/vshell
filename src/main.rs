@@ -6,7 +6,7 @@ use crate::architecture::cli;
 use crate::architecture::ipc::Ipc;
 use crate::architecture::logging;
 use crate::architecture::theme::css::{load_styles, StyleExt};
-use crate::architecture::theme::md3::ThemeManager;
+use crate::architecture::theme::ThemeManager;
 use clap::Parser;
 use color_eyre::Report;
 use config::Config;
