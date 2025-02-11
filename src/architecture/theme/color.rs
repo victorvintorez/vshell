@@ -2,13 +2,9 @@ use clap::ValueEnum;
 use color_eyre::Report;
 use colorsys::{ColorAlpha, Hsl};
 use material_colors::color::Argb;
-use material_colors::scheme::Scheme;
-use material_colors::theme::Schemes;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::fmt::Display;
 use std::fmt::{Formatter, Result as FmtResult};
-use std::iter::zip;
 use std::result::Result;
 
 use super::format::{argb_to_rgb, fmt_hex, fmt_hex_strip, fmt_hsl, fmt_hsla, fmt_rgb, fmt_rgba};
