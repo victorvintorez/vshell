@@ -1,8 +1,10 @@
 use crate::config::TemplateConfig;
 use crate::fl;
-use color_eyre::Report;
+use color_eyre::eyre::Context;
+use color_eyre::{Report, Section};
 use material_colors::theme::Theme;
 use std::format;
+use std::fs::read_to_string;
 use std::iter::zip;
 use std::path::Path;
 use std::process::Command;
@@ -24,8 +26,13 @@ impl TemplateManager {
         TemplateManager { templates, engine }
     }
 
-    pub fn generate(&self, theme: Rc<Theme>) {
-        if let Some(templates) = &self.templates {
+    pub fn generate(
+        &mut self,
+        theme: &Theme,
+        wallpaper_path: Option<&String>,
+        default_scheme: SchemesEnum,
+    ) {
+        if let Some(templates) = &mut self.templates {
             info!(
                 "{:?}",
                 &fl!(
@@ -34,142 +41,162 @@ impl TemplateManager {
                 )
             );
 
-            for (tmpl_name, template) in templates {
-                let template_path = Path::new(&template.template);
-                let target_path = Path::new(&template.target);
+            let render_data = Self::theme_to_renderdata(theme, wallpaper_path, default_scheme);
 
-                if !template_path.exists() {
-                    warn!(
-                        "{:?}",
-                        fl!(
-                            "architecture-theme-template_warn_template-not-found",
-                            name = tmpl_name,
-                            path = format!("{:?}", template_path)
-                        )
-                    );
-                    continue;
-                } else if !target_path
-                    .parent()
-                    .expect(&fl!(
-                        "architecture-theme-template_expect_template-target-dir"
-                    ))
-                    .exists()
-                {
-                    warn!(
-                        "{:?}",
-                        fl!(
-                            "architecture-theme-template_error_template-target-dir-fail",
-                            name = tmpl_name,
-                            path = format!("{:?}", target_path)
-                        )
-                    );
-                    continue;
-                }
+            match Self::theme_to_renderdata(theme, wallpaper_path, default_scheme) {
+                Ok(render_data) => {
+                    for (tmpl_name, template) in templates {
+                        let template_path = Path::new(&template.template);
+                        let target_path = Path::new(&template.target);
 
-                // run pre hook
-                if let Some(pre) = &template.pre {
-                    info!(
-                        "{:?}",
-                        fl!(
-                            "architecture-theme-template_info_pre-hook-running",
-                            name = tmpl_name,
-                            hook = pre
-                        )
-                    );
+                        if !template_path.exists() {
+                            warn!(
+                                "{:?}",
+                                fl!(
+                                    "architecture-theme-template_warn_template-not-found",
+                                    name = tmpl_name,
+                                    path = format!("{:?}", template_path)
+                                )
+                            );
+                            continue;
+                        } else if !target_path
+                            .parent()
+                            .expect(&fl!(
+                                "architecture-theme-template_expect_template-target-dir"
+                            ))
+                            .exists()
+                        {
+                            warn!(
+                                "{:?}",
+                                fl!(
+                                    "architecture-theme-template_error_template-target-dir-fail",
+                                    name = tmpl_name,
+                                    path = format!("{:?}", target_path)
+                                )
+                            );
+                            continue;
+                        }
 
-                    match Command::new("/bin/sh").args(["-c", pre]).output() {
-                        Ok(output) => {
-                            if output.status.success() {
-                                info!(
-                                    "{}",
-                                    fl!(
+                        // run pre hook
+                        if let Some(pre) = &template.pre {
+                            info!(
+                                "{:?}",
+                                fl!(
+                                    "architecture-theme-template_info_pre-hook-running",
+                                    name = tmpl_name,
+                                    hook = pre
+                                )
+                            );
+
+                            match Command::new("/bin/sh").args(["-c", pre]).output() {
+                                Ok(output) => {
+                                    if output.status.success() {
+                                        info!(
+                                            "{}",
+                                            fl!(
                                         "architecture-theme-template_warn_pre-hook-result-success",
                                         name = tmpl_name,
                                         hook = pre,
                                         output = format!("{:?}", output)
                                     )
-                                );
-                            } else {
-                                error!(
-                                    "{}",
-                                    fl!(
+                                        );
+                                    } else {
+                                        error!(
+                                            "{}",
+                                            fl!(
                                         "architecture-theme-template_error_pre-hook-result-fail",
                                         name = tmpl_name,
                                         hook = pre,
                                         output = format!("{:?}", output)
                                     )
-                                );
-                            }
-                        }
-                        Err(e) => {
-                            error!(
-                                "{}",
-                                fl!(
+                                        );
+                                    }
+                                }
+                                Err(e) => {
+                                    error!(
+                                        "{}",
+                                        fl!(
                                     "architecture-theme-template_error_pre-hook-output-fail",
                                     name = tmpl_name,
                                     hook = pre,
                                     error = format!("{:?}", e)
                                 )
-                            );
+                                    );
+                                }
+                            }
                         }
-                    }
-                }
 
-                // TODO: generate template
+                        if let Ok(tmpl_data) = read_to_string(template_path) {
+                            if let Ok(()) = self.engine.add_template(tmpl_name, tmpl_data) {
+                                let tmpl_rendered = self
+                                    .engine
+                                    .template(tmpl_name.as_str())
+                                    .render(&render_data)
+                                    .to_string();
+                            } else {
+                                error!("TODO: i18n");
+                                continue;
+                            }
+                        } else {
+                            error!("TODO: i18n");
+                            continue;
+                        }
 
-                // run post hook
-                if let Some(post) = &template.post {
-                    info!(
-                        "{:?}",
-                        fl!(
-                            "architecture-theme-template_info_post-hook-running",
-                            name = tmpl_name,
-                            hook = post
-                        )
-                    );
+                        if let Some(post) = &template.post {
+                            info!(
+                                "{:?}",
+                                fl!(
+                                    "architecture-theme-template_info_post-hook-running",
+                                    name = tmpl_name,
+                                    hook = post
+                                )
+                            );
 
-                    match Command::new("/bin/sh").args(["-c", post]).output() {
-                        Ok(output) => {
-                            if output.status.success() {
-                                info!(
-                                    "{}",
-                                    fl!(
+                            match Command::new("/bin/sh").args(["-c", post]).output() {
+                                Ok(output) => {
+                                    if output.status.success() {
+                                        info!(
+                                            "{}",
+                                            fl!(
                                         "architecture-theme-template_warn_post-hook-result-success",
                                         name = tmpl_name,
                                         hook = post,
                                         output = format!("{:?}", output)
                                     )
-                                );
-                            } else {
-                                error!(
-                                    "{}",
-                                    fl!(
+                                        );
+                                    } else {
+                                        error!(
+                                            "{}",
+                                            fl!(
                                         "architecture-theme-template_error_post-hook-result-fail",
                                         name = tmpl_name,
                                         hook = post,
                                         output = format!("{:?}", output)
                                     )
-                                );
-                            }
-                        }
-                        Err(e) => {
-                            error!(
-                                "{}",
-                                fl!(
+                                        );
+                                    }
+                                }
+                                Err(e) => {
+                                    error!(
+                                        "{}",
+                                        fl!(
                                     "architecture-theme-template_error_post-hook-output-fail",
                                     name = tmpl_name,
                                     hook = post,
                                     error = format!("{:?}", e)
                                 )
-                            );
+                                    );
+                                }
+                            }
                         }
                     }
                 }
+                Err(e) => error!("TODO: i18n"),
             }
         }
     }
 
-    pub fn theme_to_renderdata(
+    fn theme_to_renderdata(
         theme: &Theme,
         wallpaper_path: Option<&String>,
         default_scheme: SchemesEnum,
