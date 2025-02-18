@@ -1,15 +1,14 @@
 use crate::config::TemplateConfig;
 use crate::fl;
-use color_eyre::eyre::Context;
-use color_eyre::{Report, Section};
+use color_eyre::Report;
 use material_colors::theme::Theme;
+use std::collections::HashMap;
 use std::format;
 use std::fs::read_to_string;
 use std::iter::zip;
 use std::path::Path;
 use std::process::Command;
 use std::result::Result;
-use std::{collections::HashMap, rc::Rc};
 use tracing::{error, info, warn};
 use upon::{value, Engine, Value};
 
@@ -126,20 +125,30 @@ impl TemplateManager {
                             }
                         }
 
-                        if let Ok(tmpl_data) = read_to_string(template_path) {
-                            if let Ok(()) = self.engine.add_template(tmpl_name, tmpl_data) {
-                                let tmpl_rendered = self
-                                    .engine
-                                    .template(tmpl_name.as_str())
-                                    .render(&render_data)
-                                    .to_string();
-                            } else {
+                        match read_to_string(template_path) {
+                            Ok(tmpl_data) => {
+                                match self.engine.add_template(tmpl_name, tmpl_data) {
+                                    Ok(()) => {
+                                        match self.engine.template(tmpl_name).render(&render_data).to_string() {
+                                            Ok(tmpl_rendered) => {
+                                                // TODO: Save template
+                                            },
+                                            Err(e) => {
+                                                error!("TODO: i18n");
+                                                continue;
+                                            }
+                                        }
+                                    },
+                                    Err(e) => {
+                                        error!("TODO: i18n");
+                                        continue;
+                                    }
+                                }
+                            },
+                            Err(e) => {
                                 error!("TODO: i18n");
                                 continue;
                             }
-                        } else {
-                            error!("TODO: i18n");
-                            continue;
                         }
 
                         if let Some(post) = &template.post {
