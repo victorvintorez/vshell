@@ -2,13 +2,14 @@ use crate::config::TemplateConfig;
 use crate::fl;
 use color_eyre::Report;
 use material_colors::theme::Theme;
-use std::collections::HashMap;
 use std::format;
 use std::fs::read_to_string;
+use std::io::Write;
 use std::iter::zip;
 use std::path::Path;
 use std::process::Command;
 use std::result::Result;
+use std::{collections::HashMap, fs::OpenOptions};
 use tracing::{error, info, warn};
 use upon::{value, Engine, Value};
 
@@ -31,7 +32,7 @@ impl TemplateManager {
         wallpaper_path: Option<&String>,
         default_scheme: SchemesEnum,
     ) {
-        if let Some(templates) = &mut self.templates {
+        if let Some(templates) = &self.templates {
             info!(
                 "{:?}",
                 &fl!(
@@ -40,11 +41,9 @@ impl TemplateManager {
                 )
             );
 
-            let render_data = Self::theme_to_renderdata(theme, wallpaper_path, default_scheme);
-
             match Self::theme_to_renderdata(theme, wallpaper_path, default_scheme) {
                 Ok(render_data) => {
-                    for (tmpl_name, template) in templates {
+                    for (tmpl_name, template) in templates.into_iter() {
                         let template_path = Path::new(&template.template);
                         let target_path = Path::new(&template.target);
 
@@ -127,24 +126,65 @@ impl TemplateManager {
 
                         match read_to_string(template_path) {
                             Ok(tmpl_data) => {
-                                match self.engine.add_template(tmpl_name, tmpl_data) {
+                                match self.engine.add_template(tmpl_name.clone(), tmpl_data) {
                                     Ok(()) => {
-                                        match self.engine.template(tmpl_name).render(&render_data).to_string() {
+                                        match self
+                                            .engine
+                                            .template(&tmpl_name)
+                                            .render(&render_data)
+                                            .to_string()
+                                        {
                                             Ok(tmpl_rendered) => {
                                                 // TODO: Save template
-                                            },
+                                                match OpenOptions::new()
+                                                    .create(true)
+                                                    .truncate(true)
+                                                    .write(true)
+                                                    .open(target_path)
+                                                {
+                                                    Ok(mut target) => {
+                                                        match target.metadata() {
+                                                            Ok(metadata) => {
+                                                                if metadata.permissions().readonly()
+                                                                {
+                                                                    error!("TODO: i18n");
+                                                                    continue;
+                                                                }
+                                                            }
+                                                            Err(e) => {
+                                                                error!("TODO: i18n");
+                                                                continue;
+                                                            }
+                                                        }
+
+                                                        match target
+                                                            .write_all(tmpl_rendered.as_bytes())
+                                                        {
+                                                            Ok(_) => info!("TODO: i18n"),
+                                                            Err(e) => {
+                                                                error!("TODO: i18n");
+                                                                continue;
+                                                            }
+                                                        }
+                                                    }
+                                                    Err(e) => {
+                                                        error!("TODO: i18n");
+                                                        continue;
+                                                    }
+                                                }
+                                            }
                                             Err(e) => {
                                                 error!("TODO: i18n");
                                                 continue;
                                             }
                                         }
-                                    },
+                                    }
                                     Err(e) => {
                                         error!("TODO: i18n");
                                         continue;
                                     }
                                 }
-                            },
+                            }
                             Err(e) => {
                                 error!("TODO: i18n");
                                 continue;
