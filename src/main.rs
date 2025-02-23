@@ -54,21 +54,13 @@ fn main() {
 pub struct VShell {
     config: Config,
     config_dir: PathBuf,
-    theme: ThemeManager,
 }
 
 impl VShell {
     fn new(config_dir: Option<PathBuf>) -> Self {
         let (config, config_dir) = config::load_config(config_dir);
 
-        let templates = config.templates.clone();
-        let theme = ThemeManager::new(templates, &config_dir);
-
-        Self {
-            config,
-            config_dir,
-            theme,
-        }
+        Self { config, config_dir }
     }
 
     fn start(self, style_path: Option<PathBuf>) {
@@ -100,6 +92,11 @@ impl VShell {
             }
 
             running.store(true, Ordering::Relaxed);
+
+            let instance3 = instance.clone();
+            let mut theme_manager =
+                ThemeManager::new(instance3.config.templates.clone(), &instance3.config_dir);
+            theme_manager.init_theme();
 
             let ipc = Ipc::new();
             ipc.start(app, instance.clone());

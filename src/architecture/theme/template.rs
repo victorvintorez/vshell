@@ -1,6 +1,7 @@
 use crate::config::TemplateConfig;
 use crate::fl;
 use color_eyre::Report;
+use expanduser::expanduser;
 use material_colors::theme::Theme;
 use std::format;
 use std::fs::read_to_string;
@@ -44,12 +45,12 @@ impl TemplateManager {
             match Self::theme_to_renderdata(theme, wallpaper_path, default_scheme) {
                 Ok(render_data) => {
                     for (tmpl_name, template) in templates.into_iter() {
-                        let template_path = Path::new(&template.template);
-                        let target_path = Path::new(&template.target);
+                        let template_path = expanduser(&template.template).expect("TODO: i18n");
+                        let target_path = expanduser(&template.target).expect("TODO: i18n");
 
                         if !template_path.exists() {
                             warn!(
-                                "{:?}",
+                                "{}",
                                 fl!(
                                     "architecture-theme-template_warn_template-not-found",
                                     name = tmpl_name,
@@ -65,7 +66,7 @@ impl TemplateManager {
                             .exists()
                         {
                             warn!(
-                                "{:?}",
+                                "{}",
                                 fl!(
                                     "architecture-theme-template_error_template-target-dir-fail",
                                     name = tmpl_name,
@@ -78,7 +79,7 @@ impl TemplateManager {
                         // run pre hook
                         if let Some(pre) = &template.pre {
                             info!(
-                                "{:?}",
+                                "{}",
                                 fl!(
                                     "architecture-theme-template_info_pre-hook-running",
                                     name = tmpl_name,

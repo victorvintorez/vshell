@@ -13,8 +13,7 @@ use material_colors::{
     theme::{Theme, ThemeBuilder},
 };
 use std::collections::HashMap;
-use std::path::Path;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub struct ThemeManager {
     pub wallpaper_path: PathBuf,
@@ -24,11 +23,11 @@ pub struct ThemeManager {
 }
 
 impl ThemeManager {
-    pub fn new(templates: Option<HashMap<String, TemplateConfig>>, config_dir: &PathBuf) -> Self {
+    pub fn new(templates: Option<HashMap<String, TemplateConfig>>, config_dir: &Path) -> Self {
         let theme = ThemeBuilder::with_source(Argb::from_u32(0xffffffff)).build();
         let template_manager = TemplateManager::new(templates);
         let wallpaper_path = match config_dir.join("default.png").exists() {
-            true => config_dir.join("default.png"),
+            true => config_dir.join("default.png").to_path_buf(),
             false => PathBuf::new(),
         };
 

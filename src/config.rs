@@ -61,9 +61,9 @@ pub struct Config {
 
 #[derive(Deserialize, Default, Debug, Clone)]
 pub struct TemplateConfig {
-    #[serde(alias = "tmpl")]
+    #[serde(alias = "tmpl", alias = "from")]
     pub template: String,
-    #[serde(alias = "dest")]
+    #[serde(alias = "dest", alias = "to")]
     pub target: String,
     #[serde(alias = "pre_cmd")]
     pub pre: Option<String>,
