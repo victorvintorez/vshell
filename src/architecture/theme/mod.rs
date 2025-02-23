@@ -6,6 +6,7 @@ pub(crate) mod template;
 use crate::architecture::theme::template::TemplateManager;
 use crate::config::TemplateConfig;
 use crate::fl;
+use color::SchemesEnum;
 use material_colors::color::Argb;
 use material_colors::{
     image::{FilterType, ImageReader},
@@ -23,12 +24,16 @@ pub struct ThemeManager {
 }
 
 impl ThemeManager {
-    pub fn new(templates: Option<HashMap<String, TemplateConfig>>) -> Self {
+    pub fn new(templates: Option<HashMap<String, TemplateConfig>>, config_dir: &PathBuf) -> Self {
         let theme = ThemeBuilder::with_source(Argb::from_u32(0xffffffff)).build();
         let template_manager = TemplateManager::new(templates);
+        let wallpaper_path = match config_dir.join("default.png").exists() {
+            true => config_dir.join("default.png"),
+            false => PathBuf::new(),
+        };
 
         ThemeManager {
-            wallpaper_path: Path::new("").to_path_buf(),
+            wallpaper_path,
             source_color: Argb::from_u32(0xffffffff),
             theme,
             template_manager,
@@ -43,5 +48,8 @@ impl ThemeManager {
         data.resize(128, 128, FilterType::Lanczos3);
 
         self.theme = ThemeBuilder::with_source(ImageReader::extract_color(&data)).build();
+
+        self.template_manager
+            .generate(&self.theme, Some(&self.wallpaper_path), SchemesEnum::Dark);
     }
 }

@@ -6,7 +6,7 @@ use std::format;
 use std::fs::read_to_string;
 use std::io::Write;
 use std::iter::zip;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::result::Result;
 use std::{collections::HashMap, fs::OpenOptions};
@@ -29,7 +29,7 @@ impl TemplateManager {
     pub fn generate(
         &mut self,
         theme: &Theme,
-        wallpaper_path: Option<&String>,
+        wallpaper_path: Option<&PathBuf>,
         default_scheme: SchemesEnum,
     ) {
         if let Some(templates) = &self.templates {
@@ -247,7 +247,7 @@ impl TemplateManager {
 
     fn theme_to_renderdata(
         theme: &Theme,
-        wallpaper_path: Option<&String>,
+        wallpaper_path: Option<&PathBuf>,
         default_scheme: SchemesEnum,
     ) -> Result<Value, Report> {
         let mut colors: HashMap<String, ColorVariants> = Default::default();

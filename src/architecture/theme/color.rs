@@ -29,7 +29,7 @@ impl Display for SchemesEnum {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Color {
     hex: String,
-    hex_stripped: String,
+    hex_strip: String,
     rgb: String,
     rgba: String,
     hsl: String,
@@ -82,7 +82,7 @@ fn argb_to_color(color: Argb) -> Color {
     let hsl_color = Hsl::from(&base_color);
     Color {
         hex: fmt_hex(&base_color),
-        hex_stripped: fmt_hex_strip(&base_color),
+        hex_strip: fmt_hex_strip(&base_color),
         rgb: fmt_rgb(&base_color),
         rgba: fmt_rgba(&base_color, true),
         hsl: fmt_hsl(&hsl_color),

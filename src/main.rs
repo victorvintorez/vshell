@@ -62,7 +62,7 @@ impl VShell {
         let (config, config_dir) = config::load_config(config_dir);
 
         let templates = config.templates.clone();
-        let theme = ThemeManager::new(templates);
+        let theme = ThemeManager::new(templates, &config_dir);
 
         Self {
             config,
