@@ -37,21 +37,21 @@ pub fn fmt_rgb(color: &Rgb) -> String {
 
 pub fn fmt_rgba(color: &Rgb, divide: bool) -> String {
     if divide {
-        return format!(
+        format!(
             "rgba({:?}, {:?}, {:?}, {:.1})",
             color.red() as u8,
             color.green() as u8,
             color.blue() as u8,
             color.alpha() / 255.
-        );
+        )
     }
-    return format!(
+    format!(
         "rgba({:?}, {:?}, {:?}, {:.1})",
         color.red() as u8,
         color.green() as u8,
         color.blue() as u8,
         color.alpha()
-    );
+    )
 }
 
 pub fn fmt_hsl(color: &Hsl) -> String {

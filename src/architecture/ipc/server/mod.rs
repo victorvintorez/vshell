@@ -1,13 +1,15 @@
-mod debug;
+mod handle_response;
 
 use super::Ipc;
 use crate::architecture::ipc::request::Request;
 use crate::architecture::ipc::response::Response;
-use crate::architecture::ipc::server::debug::handle_request;
+use crate::architecture::theme::ThemeManager;
 use crate::{fl, glib_recv_mpsc, send_async, spawn, try_send, VShell};
 use color_eyre::Result;
 use gtk4::glib;
 use gtk4::Application;
+use handle_response::{handle_debug, handle_wallpaper};
+use std::cell::{RefCell, RefMut};
 use std::path::Path;
 use std::rc::Rc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -17,7 +19,12 @@ use tokio::sync::mpsc::{Receiver, Sender};
 use tracing::{debug, error, info, warn};
 
 impl Ipc {
-    pub fn start(&self, application: &Application, vshell: Rc<VShell>) {
+    pub fn start(
+        &self,
+        application: &Application,
+        vshell: Rc<VShell>,
+        theme_manager: Rc<RefCell<ThemeManager>>,
+    ) {
         let (req_tx, req_rx) = mpsc::channel(32);
         let (res_tx, mut res_rx) = mpsc::channel(32);
 
@@ -79,7 +86,7 @@ impl Ipc {
         let application = application.clone();
 
         glib_recv_mpsc!(req_rx, request => {
-            let res = Self::handle_request(request, &application, &vshell);
+            let res = Self::handle_request(request, &application, &vshell, theme_manager.borrow_mut());
             try_send!(res_tx, res);
         });
     }
@@ -124,9 +131,11 @@ impl Ipc {
         request: Request,
         application: &Application,
         vshell: &Rc<VShell>,
+        theme_manager: RefMut<'_, ThemeManager>,
     ) -> Response {
         match request {
-            Request::Debug(request) => handle_request(request, application),
+            Request::Debug(request) => handle_debug(request, application),
+            Request::Wallpaper(request) => handle_wallpaper(request, theme_manager),
         }
     }
 

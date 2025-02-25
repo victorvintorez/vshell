@@ -12,6 +12,7 @@ use color_eyre::Report;
 use config::Config;
 use dirs::config_dir;
 use gtk4::prelude::*;
+use std::cell::RefCell;
 use std::env;
 use std::future::Future;
 use std::path::PathBuf;
@@ -96,10 +97,18 @@ impl VShell {
             let instance3 = instance.clone();
             let mut theme_manager =
                 ThemeManager::new(instance3.config.templates.clone(), &instance3.config_dir);
-            theme_manager.init_theme();
+            match theme_manager.update_theme() {
+                Ok(()) => info!("TODO: i18n"),
+                Err(e) => {
+                    error!("TODO: i18n");
+                    exit(1);
+                }
+            };
+
+            let theme_instance = Rc::new(RefCell::new(theme_manager));
 
             let ipc = Ipc::new();
-            ipc.start(app, instance.clone());
+            ipc.start(app, instance.clone(), theme_instance.clone());
 
             let mut style_path = style_path.clone().unwrap_or_else(|| {
                 config_dir().map_or_else(

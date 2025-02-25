@@ -7,7 +7,7 @@ use std::format;
 use std::fs::read_to_string;
 use std::io::Write;
 use std::iter::zip;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
 use std::result::Result;
 use std::{collections::HashMap, fs::OpenOptions};
@@ -44,7 +44,7 @@ impl TemplateManager {
 
             match Self::theme_to_renderdata(theme, wallpaper_path, default_scheme) {
                 Ok(render_data) => {
-                    for (tmpl_name, template) in templates.into_iter() {
+                    for (tmpl_name, template) in templates.iter() {
                         let template_path = expanduser(&template.template).expect("TODO: i18n");
                         let target_path = expanduser(&template.target).expect("TODO: i18n");
 
@@ -125,13 +125,14 @@ impl TemplateManager {
                             }
                         }
 
+                        // TODO: change this to use ? and bubble error up to the update_theme function so errors can be output to command line
                         match read_to_string(template_path) {
                             Ok(tmpl_data) => {
                                 match self.engine.add_template(tmpl_name.clone(), tmpl_data) {
                                     Ok(()) => {
                                         match self
                                             .engine
-                                            .template(&tmpl_name)
+                                            .template(tmpl_name)
                                             .render(&render_data)
                                             .to_string()
                                         {
@@ -451,7 +452,7 @@ impl TemplateManager {
         for ((name, light), (_, dark)) in zip(light_scheme.into_iter(), dark_scheme.into_iter()) {
             colors.insert(
                 name.to_string(),
-                transform_color(&name, theme.source, default_scheme, *light, *dark)?,
+                transform_color(name, theme.source, default_scheme, *light, *dark)?,
             );
         }
 
