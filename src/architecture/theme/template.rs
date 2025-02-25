@@ -448,6 +448,5 @@ impl TemplateManager {
 }
 
 pub fn init_template_engine() -> Engine<'static> {
-    let syntax = upon::Syntax::default();
-    Engine::with_syntax(syntax)
+    Engine::new()
 }

@@ -2991,7 +2991,6 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cc1243af2969e332d5b9b99087eddd44d04a41da8630ed53e06df497b7f5c747"
 dependencies = [
- "aho-corasick",
  "serde",
  "unicode-ident",
  "unicode-width",
