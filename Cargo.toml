@@ -37,7 +37,7 @@ upon = { version = "0.9.0" }
 material-colors = { version = "0.4.2", features = ["image", "serde"] }
 colorsys = "0.6.7"
 expanduser = "1.2.2"
-universal-config = { version = "0.5.0", default-features = false, features = ["corn", "toml"] }
+universal-config = { version = "0.5.0", git = "https://github.com/jakestanger/universal-config-rs", default-features = false, features = ["corn", "kdl"] }
 
 [build-dependencies]
 clap = { version = "4.5.27", features = ["derive"] }
