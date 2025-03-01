@@ -27,7 +27,32 @@ pub struct ThemeManager {
 }
 
 impl ThemeManager {
-    pub fn new(templates: Option<HashMap<String, TemplateConfig>>, config_dir: &Path,te(&self.theme, &self.wallpaper_path, SchemesEnum::Dark);
+    pub fn new(templates: Option<HashMap<String, TemplateConfig>>, config_dir: &Path, default_scheme: SchemesEnum) -> Self {
+        let theme = ThemeBuilder::with_source(Argb::from_u32(0xffffffff)).build();
+        let template_manager = TemplateManager::new(templates);
+        let wallpaper_path = match config_dir.join("default.png").exists() {
+            true => config_dir.join("default.png").to_path_buf(),
+            false => PathBuf::new(),
+        };
+
+        ThemeManager {
+            wallpaper_path,
+            source_color: Argb::from_u32(0xffffffff),
+            theme,
+            template_manager,
+            color_scheme: default_scheme,
+        }
+    }
+
+    pub fn update_theme(&mut self) -> Result<(), Report> {
+        let image = read(&self.wallpaper_path).wrap_err("TODO: i18n")?;
+        let mut data = ImageReader::read(image).wrap_err("TODO: i18n")?;
+        data.resize(128, 128, FilterType::Lanczos3);
+
+        self.theme = ThemeBuilder::with_source(ImageReader::extract_color(&data)).build();
+        self.template_manager
+            .generate(&self.theme, Some(&self.wallpaper_path), SchemesEnum::Dark);
+
         Ok(())
     }
 
