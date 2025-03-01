@@ -32,7 +32,7 @@ impl TemplateManager {
         theme: &Theme,
         wallpaper_path: Option<&PathBuf>,
         default_scheme: SchemesEnum,
-    ) {
+    ) -> Result<(), Report> {
         if let Some(templates) = &self.templates {
             info!(
                 "{:?}",
@@ -42,39 +42,11 @@ impl TemplateManager {
                 )
             );
 
-            match Self::theme_to_renderdata(theme, wallpaper_path, default_scheme) {
-                Ok(render_data) => {
-                    for (tmpl_name, template) in templates.iter() {
-                        let template_path = expanduser(&template.template).expect("TODO: i18n");
-                        let target_path = expanduser(&template.target).expect("TODO: i18n");
+            let render_data = theme_to_renderdata(theme, wallpaper_path, default_scheme).wrap_err("TODO: i18n")?;
 
-                        if !template_path.exists() {
-                            warn!(
-                                "{}",
-                                fl!(
-                                    "architecture-theme-template_warn_template-not-found",
-                                    name = tmpl_name,
-                                    path = format!("{:?}", template_path)
-                                )
-                            );
-                            continue;
-                        } else if !target_path
-                            .parent()
-                            .expect(&fl!(
-                                "architecture-theme-template_expect_template-target-dir"
-                            ))
-                            .exists()
-                        {
-                            warn!(
-                                "{}",
-                                fl!(
-                                    "architecture-theme-template_error_template-target-dir-fail",
-                                    name = tmpl_name,
-                                    path = format!("{:?}", target_path)
-                                )
-                            );
-                            continue;
-                        }
+                    for (tmpl_name, template) in templates.iter() {
+                        let template_path = expanduser(&template.template).wrap_err("TODO: i18n");
+                        let target_path = expanduser(&template.target).wrap_err("TODO: i18n");
 
                         // run pre hook
                         if let Some(pre) = &template.pre {
@@ -245,6 +217,7 @@ impl TemplateManager {
                 Err(e) => error!("TODO: i18n"),
             }
         }
+// Log hook errors and return Ok with errors
     }
 
     fn theme_to_renderdata(

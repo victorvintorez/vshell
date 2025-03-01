@@ -44,14 +44,15 @@ pub fn fmt_rgba(color: &Rgb, divide: bool) -> String {
             color.blue() as u8,
             color.alpha() / 255.
         )
+    } else {
+        format!(
+            "rgba({:?}, {:?}, {:?}, {:.1})",
+            color.red() as u8,
+            color.green() as u8,
+            color.blue() as u8,
+            color.alpha()
+        )
     }
-    format!(
-        "rgba({:?}, {:?}, {:?}, {:.1})",
-        color.red() as u8,
-        color.green() as u8,
-        color.blue() as u8,
-        color.alpha()
-    )
 }
 
 pub fn fmt_hsl(color: &Hsl) -> String {
@@ -65,19 +66,20 @@ pub fn fmt_hsl(color: &Hsl) -> String {
 
 pub fn fmt_hsla(color: &Hsl, divide: bool) -> String {
     if divide {
-        return format!(
+        format!(
             "hsla({:?}, {:?}, {:?}, {:.1})",
             color.hue() as u8,
             color.saturation() as u8,
             color.lightness() as u8,
             color.alpha() / 255.
-        );
+        )
+    } else {
+        format!(
+            "hsla({:?}, {:?}, {:?}, {:.1})",
+            color.hue() as u8,
+            color.saturation() as u8,
+            color.lightness() as u8,
+            color.alpha()
+        )
     }
-    return format!(
-        "hsla({:?}, {:?}, {:?}, {:.1})",
-        color.hue() as u8,
-        color.saturation() as u8,
-        color.lightness() as u8,
-        color.alpha()
-    );
 }
