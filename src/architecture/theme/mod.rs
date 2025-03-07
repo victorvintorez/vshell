@@ -27,7 +27,11 @@ pub struct ThemeManager {
 }
 
 impl ThemeManager {
-    pub fn new(templates: Option<HashMap<String, TemplateConfig>>, config_dir: &Path, default_scheme: SchemesEnum) -> Self {
+    pub fn new(
+        templates: Option<HashMap<String, TemplateConfig>>,
+        config_dir: &Path,
+        default_scheme: SchemesEnum,
+    ) -> Self {
         let theme = ThemeBuilder::with_source(Argb::from_u32(0xffffffff)).build();
         let template_manager = TemplateManager::new(templates);
         let wallpaper_path = match config_dir.join("default.png").exists() {
@@ -44,30 +48,33 @@ impl ThemeManager {
         }
     }
 
-    pub fn update_theme(&mut self) -> Result<(), Report> {
+    pub fn update_theme(&mut self) -> Result<String, Report> {
         let image = read(&self.wallpaper_path).wrap_err("TODO: i18n")?;
         let mut data = ImageReader::read(image).wrap_err("TODO: i18n")?;
         data.resize(128, 128, FilterType::Lanczos3);
 
         self.theme = ThemeBuilder::with_source(ImageReader::extract_color(&data)).build();
-        self.template_manager
-            .generate(&self.theme, Some(&self.wallpaper_path), SchemesEnum::Dark);
+        self.template_manager.generate(
+            &self.theme,
+            Some(&self.wallpaper_path),
+            SchemesEnum::Dark,
+        )?;
 
-        Ok(())
+        Ok("".to_owned())
     }
 
-    pub fn update_wallpaper(&mut self, wallpaper: String) -> Result<(), Report> {
+    pub fn update_wallpaper(&mut self, wallpaper: String) -> Result<String, Report> {
         let path = expanduser(wallpaper).wrap_err("TODO: i18n")?;
         self.wallpaper_path = path;
 
         self.update_theme().wrap_err("TODO: i18n")?;
-        Ok(())
+        Ok("TODO: i18n".to_owned())
     }
 
-    pub fn update_scheme(&mut self, new_scheme: SchemesEnum) -> Result<(), Report> {
+    pub fn update_scheme(&mut self, new_scheme: SchemesEnum) -> Result<String, Report> {
         self.color_scheme = new_scheme;
 
         self.update_theme().wrap_err("TODO: i18n");
-        Ok(())
+        Ok("TODO: i18n".to_owned())
     }
 }

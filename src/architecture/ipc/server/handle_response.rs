@@ -1,6 +1,6 @@
 use std::cell::RefMut;
 
-use crate::architecture::ipc::request::{DebugRequest, WallpaperRequest};
+use crate::architecture::ipc::request::{DebugRequest, SchemeRequest, WallpaperRequest};
 use crate::architecture::ipc::response::Response;
 use crate::architecture::theme::ThemeManager;
 use crate::fl;
@@ -24,13 +24,39 @@ pub fn handle_wallpaper(
 ) -> Response {
     match request {
         WallpaperRequest::Set { path } => match theme_manager.update_wallpaper(path) {
-            Ok(()) => Response::Ok { message: Some("TODO: i18n".to_string()) },
-            Err(e) => Response::Error { message: Some("TODO: i18n".to_string()) },
+            Ok(res) => Response::Ok {
+                message: Some("TODO: i18n".to_string()),
+            },
+            Err(e) => Response::Error {
+                message: Some("TODO: i18n".to_string()),
+            },
         },
         WallpaperRequest::Default => Response::Error {
             message: Some("Not Implemented".to_string()),
         },
         WallpaperRequest::Show => Response::Error {
+            message: Some("Not Implemented".to_string()),
+        },
+    }
+}
+
+pub fn handle_scheme(
+    request: SchemeRequest,
+    mut theme_manager: RefMut<'_, ThemeManager>,
+) -> Response {
+    match request {
+        SchemeRequest::Set { scheme } => match theme_manager.update_scheme(scheme) {
+            Ok(res) => Response::Ok {
+                message: Some("TODO: i18n".to_string()),
+            },
+            Err(e) => Response::Error {
+                message: Some("TODO: i18n".to_string()),
+            },
+        },
+        SchemeRequest::Default => Response::Error {
+            message: Some("Not Implemented".to_string()),
+        },
+        SchemeRequest::Show => Response::Error {
             message: Some("Not Implemented".to_string()),
         },
     }

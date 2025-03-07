@@ -1,4 +1,6 @@
+use crate::architecture::theme::color::SchemesEnum;
 use crate::fl;
+use crate::shell::ShellType;
 use color_eyre::Report;
 use serde::Deserialize;
 use std::path::PathBuf;
@@ -56,6 +58,8 @@ pub fn load_config(config_dir: Option<PathBuf>) -> (Config, PathBuf) {
 pub struct Config {
     #[serde(default)]
     pub monitor: String,
+    #[serde(default)]
+    pub default_scheme: SchemesEnum,
     pub templates: Option<HashMap<String, TemplateConfig>>,
 }
 
@@ -65,8 +69,12 @@ pub struct TemplateConfig {
     pub template: String,
     #[serde(alias = "dest", alias = "to")]
     pub target: String,
+    #[serde(default)]
+    pub pre_shell: ShellType,
     #[serde(alias = "pre_cmd")]
     pub pre: Option<String>,
+    #[serde(default)]
+    pub post_shell: ShellType,
     #[serde(alias = "post_cmd", alias = "reload")]
     pub post: Option<String>,
 }

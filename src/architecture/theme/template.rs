@@ -1,5 +1,6 @@
 use crate::config::TemplateConfig;
 use crate::fl;
+use crate::shell::{run_shell_cmd, ShellResult};
 use color_eyre::Report;
 use expanduser::expanduser;
 use material_colors::theme::Theme;
@@ -32,7 +33,7 @@ impl TemplateManager {
         theme: &Theme,
         wallpaper_path: Option<&PathBuf>,
         default_scheme: SchemesEnum,
-    ) -> Result<(), Report> {
+    ) -> Result<String, Report> {
         if let Some(templates) = &self.templates {
             info!(
                 "{:?}",
@@ -44,180 +45,47 @@ impl TemplateManager {
 
             let render_data = theme_to_renderdata(theme, wallpaper_path, default_scheme).wrap_err("TODO: i18n")?;
 
-                    for (tmpl_name, template) in templates.iter() {
-                        let template_path = expanduser(&template.template).wrap_err("TODO: i18n");
-                        let target_path = expanduser(&template.target).wrap_err("TODO: i18n");
+            let cmd_results = Vec<ShellResult>::new();
 
-                        // run pre hook
-                        if let Some(pre) = &template.pre {
-                            info!(
-                                "{}",
-                                fl!(
-                                    "architecture-theme-template_info_pre-hook-running",
-                                    name = tmpl_name,
-                                    hook = pre
-                                )
-                            );
+            for (tmpl_name, template) in templates.iter() {
+                let template_path = expanduser(&template.template).wrap_err("TODO: i18n")?;
+                let target_path = expanduser(&template.target).wrap_err("TODO: i18n")?;
 
-                            match Command::new("/bin/sh").args(["-c", pre]).output() {
-                                Ok(output) => {
-                                    if output.status.success() {
-                                        info!(
-                                            "{}",
-                                            fl!(
-                                        "architecture-theme-template_warn_pre-hook-result-success",
-                                        name = tmpl_name,
-                                        hook = pre,
-                                        output = format!("{:?}", output)
-                                    )
-                                        );
-                                    } else {
-                                        error!(
-                                            "{}",
-                                            fl!(
-                                        "architecture-theme-template_error_pre-hook-result-fail",
-                                        name = tmpl_name,
-                                        hook = pre,
-                                        output = format!("{:?}", output)
-                                    )
-                                        );
-                                    }
-                                }
-                                Err(e) => {
-                                    error!(
-                                        "{}",
-                                        fl!(
-                                    "architecture-theme-template_error_pre-hook-output-fail",
-                                    name = tmpl_name,
-                                    hook = pre,
-                                    error = format!("{:?}", e)
-                                )
-                                    );
-                                }
-                            }
-                        }
-
-                        // TODO: change this to use ? and bubble error up to the update_theme function so errors can be output to command line
-                        match read_to_string(template_path) {
-                            Ok(tmpl_data) => {
-                                match self.engine.add_template(tmpl_name.clone(), tmpl_data) {
-                                    Ok(()) => {
-                                        match self
-                                            .engine
-                                            .template(tmpl_name)
-                                            .render(&render_data)
-                                            .to_string()
-                                        {
-                                            Ok(tmpl_rendered) => {
-                                                // TODO: Save template
-                                                match OpenOptions::new()
-                                                    .create(true)
-                                                    .truncate(true)
-                                                    .write(true)
-                                                    .open(target_path)
-                                                {
-                                                    Ok(mut target) => {
-                                                        match target.metadata() {
-                                                            Ok(metadata) => {
-                                                                if metadata.permissions().readonly()
-                                                                {
-                                                                    error!("TODO: i18n");
-                                                                    continue;
-                                                                }
-                                                            }
-                                                            Err(e) => {
-                                                                error!("TODO: i18n");
-                                                                continue;
-                                                            }
-                                                        }
-
-                                                        match target
-                                                            .write_all(tmpl_rendered.as_bytes())
-                                                        {
-                                                            Ok(_) => info!("TODO: i18n"),
-                                                            Err(e) => {
-                                                                error!("TODO: i18n");
-                                                                continue;
-                                                            }
-                                                        }
-                                                    }
-                                                    Err(e) => {
-                                                        error!("TODO: i18n");
-                                                        continue;
-                                                    }
-                                                }
-                                            }
-                                            Err(e) => {
-                                                error!("TODO: i18n");
-                                                continue;
-                                            }
-                                        }
-                                    }
-                                    Err(e) => {
-                                        error!("TODO: i18n");
-                                        continue;
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                error!("TODO: i18n");
-                                continue;
-                            }
-                        }
-
-                        if let Some(post) = &template.post {
-                            info!(
-                                "{:?}",
-                                fl!(
-                                    "architecture-theme-template_info_post-hook-running",
-                                    name = tmpl_name,
-                                    hook = post
-                                )
-                            );
-
-                            match Command::new("/bin/sh").args(["-c", post]).output() {
-                                Ok(output) => {
-                                    if output.status.success() {
-                                        info!(
-                                            "{}",
-                                            fl!(
-                                        "architecture-theme-template_warn_post-hook-result-success",
-                                        name = tmpl_name,
-                                        hook = post,
-                                        output = format!("{:?}", output)
-                                    )
-                                        );
-                                    } else {
-                                        error!(
-                                            "{}",
-                                            fl!(
-                                        "architecture-theme-template_error_post-hook-result-fail",
-                                        name = tmpl_name,
-                                        hook = post,
-                                        output = format!("{:?}", output)
-                                    )
-                                        );
-                                    }
-                                }
-                                Err(e) => {
-                                    error!(
-                                        "{}",
-                                        fl!(
-                                    "architecture-theme-template_error_post-hook-output-fail",
-                                    name = tmpl_name,
-                                    hook = post,
-                                    error = format!("{:?}", e)
-                                )
-                                    );
-                                }
-                            }
-                        }
-                    }
+                // run pre hook
+                if let Some(pre) = &template.pre {
+                    cmd_results.push(run_shell_cmd(&template.pre_shell, pre));
                 }
-                Err(e) => error!("TODO: i18n"),
+
+                let tmpl_data = read_to_string(template_path).wrap_err("TODO: i18n")?;
+                self.engine.add_template(tmpl_name.clone(), tmpl_data).wrap_err("TODO: i18n")?;
+                let tmpl_rendered = self.engine.template(tmpl_name).render(&render_data).to_string().wrap_err("TODO: i18n")?;
+                let mut target = OpenOptions::new().create(true).truncate(true).write(true).open(target_path).wrap_err("TODO: i18n")?;
+                let metadata = target.metadata().wrap_err("TODO: i18n")?;
+
+                if metadata.permissions().readonly()
+                {
+                    error!("TODO: i18n");
+                    return Report::new("TODO: i18n");
+                }
+
+                target.write_all(tmpl_rendered.as_bytes()).wrap_err("TODO: i18n")?;
+
+                if let Some(post) = &template.post {
+                    cmd_results.push(run_shell_cmd(&template.post_shell, post))
+                }
             }
+
+            let (successes, errors, outputs): (int, int, Vec<&str>) = cmd_results.iter().map(|res| {
+                if(res.success = true) {
+                    successes += 1;
+                } else {
+                    errors += 1;
+                }
+                outputs.push(res.output)
+            });
+
+            Ok(format!("TODO: i18n, {success}, {error}, {output}\n", successes, errors, output.join("\n")))
         }
-// Log hook errors and return Ok with errors
     }
 
     fn theme_to_renderdata(

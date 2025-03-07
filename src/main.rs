@@ -1,6 +1,7 @@
 mod architecture;
 mod config;
 mod macros;
+mod shell;
 
 use crate::architecture::cli;
 use crate::architecture::ipc::Ipc;
@@ -96,7 +97,7 @@ impl VShell {
 
             let instance3 = instance.clone();
             let mut theme_manager =
-                ThemeManager::new(instance3.config.templates.clone(), &instance3.config_dir);
+                ThemeManager::new(instance3.config.templates.clone(), &instance3.config_dir, &instance3.config.default_scheme);
             match theme_manager.update_theme() {
                 Ok(()) => info!("TODO: i18n"),
                 Err(e) => {
