@@ -1,18 +1,19 @@
 use crate::config::TemplateConfig;
 use crate::fl;
-use crate::shell::{run_shell_cmd, ShellResult};
+use crate::shell::run_shell_cmd;
+use color_eyre::eyre::Context;
 use color_eyre::Report;
+use core::fmt;
 use expanduser::expanduser;
 use material_colors::theme::Theme;
-use std::format;
 use std::fs::read_to_string;
 use std::io::Write;
 use std::iter::zip;
 use std::path::PathBuf;
-use std::process::Command;
 use std::result::Result;
 use std::{collections::HashMap, fs::OpenOptions};
-use tracing::{error, info, warn};
+use std::{error, format};
+use tracing::info;
 use upon::{value, Engine, Value};
 
 use super::color::{transform_color, ColorVariants, SchemesEnum};
@@ -43,9 +44,10 @@ impl TemplateManager {
                 )
             );
 
-            let render_data = theme_to_renderdata(theme, wallpaper_path, default_scheme).wrap_err("TODO: i18n")?;
+            let render_data = Self::theme_to_renderdata(theme, wallpaper_path, default_scheme)
+                .wrap_err("TODO: i18n")?;
 
-            let cmd_results = Vec<ShellResult>::new();
+            let mut cmd_results = vec![];
 
             for (tmpl_name, template) in templates.iter() {
                 let template_path = expanduser(&template.template).wrap_err("TODO: i18n")?;
@@ -57,34 +59,57 @@ impl TemplateManager {
                 }
 
                 let tmpl_data = read_to_string(template_path).wrap_err("TODO: i18n")?;
-                self.engine.add_template(tmpl_name.clone(), tmpl_data).wrap_err("TODO: i18n")?;
-                let tmpl_rendered = self.engine.template(tmpl_name).render(&render_data).to_string().wrap_err("TODO: i18n")?;
-                let mut target = OpenOptions::new().create(true).truncate(true).write(true).open(target_path).wrap_err("TODO: i18n")?;
+                self.engine
+                    .add_template(tmpl_name.clone(), tmpl_data)
+                    .wrap_err("TODO: i18n")?;
+                let tmpl_rendered = self
+                    .engine
+                    .template(tmpl_name)
+                    .render(&render_data)
+                    .to_string()
+                    .wrap_err("TODO: i18n")?;
+                let mut target = OpenOptions::new()
+                    .create(true)
+                    .truncate(true)
+                    .write(true)
+                    .open(&target_path)
+                    .wrap_err("TODO: i18n")?;
                 let metadata = target.metadata().wrap_err("TODO: i18n")?;
 
-                if metadata.permissions().readonly()
-                {
-                    error!("TODO: i18n");
-                    return Report::new("TODO: i18n");
+                if metadata.permissions().readonly() {
+                    return Err(Report::new(ReadOnlyError {
+                        path: target_path.clone(),
+                    })
+                    .wrap_err("TODO: i18n"));
                 }
 
-                target.write_all(tmpl_rendered.as_bytes()).wrap_err("TODO: i18n")?;
+                target
+                    .write_all(tmpl_rendered.as_bytes())
+                    .wrap_err("TODO: i18n")?;
 
                 if let Some(post) = &template.post {
                     cmd_results.push(run_shell_cmd(&template.post_shell, post))
                 }
             }
 
-            let (successes, errors, outputs): (int, int, Vec<&str>) = cmd_results.iter().map(|res| {
-                if(res.success = true) {
-                    successes += 1;
-                } else {
-                    errors += 1;
-                }
-                outputs.push(res.output)
+            let mut successes = 0;
+            let mut errors = 0;
+            let mut outputs = vec![];
+            cmd_results.iter().for_each(|res| {
+                match res.success {
+                    true => successes += 1,
+                    false => errors += 1,
+                };
+                outputs.push(res.output.clone());
             });
 
-            Ok(format!("TODO: i18n, {success}, {error}, {output}\n", successes, errors, output.join("\n")))
+            let outputs_str = outputs.join("\n");
+
+            Ok(format!(
+                "TODO: i18n, {successes}, {errors}, {outputs_str}\n",
+            ))
+        } else {
+            Ok("TODO: i18n".to_string())
         }
     }
 
@@ -317,4 +342,38 @@ impl TemplateManager {
 
 pub fn init_template_engine() -> Engine<'static> {
     Engine::new()
+}
+
+pub struct ReadOnlyError {
+    path: PathBuf,
+}
+
+impl fmt::Display for ReadOnlyError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "File at \"{}\" is marked as read-only",
+            self.path.display()
+        )
+    }
+}
+
+impl fmt::Debug for ReadOnlyError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ReadOnlyError {{ path: {} }}", self.path.display())
+    }
+}
+
+impl error::Error for ReadOnlyError {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+        None
+    }
+
+    fn description(&self) -> &str {
+        "description() is deprecated; use Display"
+    }
+
+    fn cause(&self) -> Option<&dyn error::Error> {
+        self.source()
+    }
 }

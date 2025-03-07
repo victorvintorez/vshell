@@ -26,6 +26,24 @@ impl Display for SchemesEnum {
     }
 }
 
+impl TryFrom<String> for SchemesEnum {
+    type Error = ();
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        match value.to_lowercase().as_str() {
+            "dark" => Ok(SchemesEnum::Dark),
+            "light" => Ok(SchemesEnum::Light),
+            _ => Err(()),
+        }
+    }
+}
+
+impl Default for SchemesEnum {
+    fn default() -> Self {
+        SchemesEnum::Dark
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Color {
     hex: String,

@@ -2,6 +2,7 @@ use std::cell::RefMut;
 
 use crate::architecture::ipc::request::{DebugRequest, SchemeRequest, WallpaperRequest};
 use crate::architecture::ipc::response::Response;
+use crate::architecture::theme::color::SchemesEnum;
 use crate::architecture::theme::ThemeManager;
 use crate::fl;
 use gtk4::Application;
@@ -45,9 +46,14 @@ pub fn handle_scheme(
     mut theme_manager: RefMut<'_, ThemeManager>,
 ) -> Response {
     match request {
-        SchemeRequest::Set { scheme } => match theme_manager.update_scheme(scheme) {
-            Ok(res) => Response::Ok {
-                message: Some("TODO: i18n".to_string()),
+        SchemeRequest::Set { scheme } => match SchemesEnum::try_from(scheme) {
+            Ok(scheme) => match theme_manager.update_scheme(scheme) {
+                Ok(res) => Response::Ok {
+                    message: Some("TODO: i18n".to_string()),
+                },
+                Err(e) => Response::Error {
+                    message: Some("TODO: i18n".to_string()),
+                },
             },
             Err(e) => Response::Error {
                 message: Some("TODO: i18n".to_string()),

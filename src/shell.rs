@@ -1,43 +1,41 @@
 use std::process::Command;
 
+use serde::{Deserialize, Serialize};
+use tracing::{info, warn};
+
 struct Shell {
-    name: &str,
-    path: &str,
-    flag: &str,
+    path: &'static str,
+    flag: &'static str,
 }
 
 const SH: Shell = Shell {
-    name: "sh",
     path: "/usr/bin/sh",
     flag: "-c",
 };
 
 const BASH: Shell = Shell {
-    name: "bash",
     path: "/usr/bin/bash",
     flag: "-c",
 };
 
 const ZSH: Shell = Shell {
-    name: "zsh",
     path: "/usr/bin/zsh",
     flag: "-c",
 };
 
 const FISH: Shell = Shell {
-    name: "fish",
     path: "/usr/bin/fish",
     flag: "-c",
 };
 
 const NU: Shell = Shell {
-    name: "nu",
     path: "/usr/bin/nu",
     flag: "-c",
 };
 
-#[derive(Serialize, Deserialize, Clone, Copy, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Default)]
 pub enum ShellType {
+    #[default]
     Sh,
     Bash,
     Zsh,
@@ -47,7 +45,7 @@ pub enum ShellType {
 
 impl From<ShellType> for Shell {
     fn from(item: ShellType) -> Self {
-        match ShellType {
+        match item {
             ShellType::Sh => SH,
             ShellType::Bash => BASH,
             ShellType::Zsh => ZSH,
@@ -57,14 +55,8 @@ impl From<ShellType> for Shell {
     }
 }
 
-impl Default for ShellType {
-    fn default() -> Self {
-        ShellType::Sh
-    }
-}
-
-pub fn run_shell_cmd(shelltype: ShellType, command: &str) -> ShellResult {
-    let shell: Shell = ShellType.into();
+pub fn run_shell_cmd(shelltype: &ShellType, command: &str) -> ShellResult {
+    let shell: Shell = shelltype.clone().into();
 
     info!("TODO: i18n");
 
@@ -76,20 +68,23 @@ pub fn run_shell_cmd(shelltype: ShellType, command: &str) -> ShellResult {
             if output.status.success() {
                 info!("TODO: i18n");
                 ShellResult {
+                    command: command.to_string(),
                     success: true,
-                    output,
+                    output: String::from_utf8(output.stdout).expect("TODO: i18n"),
                 }
             } else {
                 warn!("TODO: i18n");
                 ShellResult {
+                    command: command.to_string(),
                     success: false,
-                    output,
+                    output: String::from_utf8(output.stdout).expect("TODO: i18n"),
                 }
             }
         }
         Err(e) => {
             warn!("TODO: i18n");
             ShellResult {
+                command: command.to_string(),
                 success: false,
                 output: e.to_string(),
             }
@@ -98,6 +93,7 @@ pub fn run_shell_cmd(shelltype: ShellType, command: &str) -> ShellResult {
 }
 
 pub struct ShellResult {
-    success: bool,
-    output: String,
+    pub command: String,
+    pub success: bool,
+    pub output: String,
 }

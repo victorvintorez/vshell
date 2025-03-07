@@ -99,7 +99,7 @@ impl VShell {
             let mut theme_manager =
                 ThemeManager::new(instance3.config.templates.clone(), &instance3.config_dir, &instance3.config.default_scheme);
             match theme_manager.update_theme() {
-                Ok(()) => info!("TODO: i18n"),
+                Ok(warnings) => info!("TODO: i18n"),
                 Err(e) => {
                     error!("TODO: i18n");
                     exit(1);

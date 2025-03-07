@@ -20,7 +20,6 @@ use std::path::{Path, PathBuf};
 
 pub struct ThemeManager {
     pub wallpaper_path: PathBuf,
-    pub source_color: Argb,
     pub theme: Theme,
     pub color_scheme: SchemesEnum,
     pub template_manager: TemplateManager,
@@ -30,7 +29,7 @@ impl ThemeManager {
     pub fn new(
         templates: Option<HashMap<String, TemplateConfig>>,
         config_dir: &Path,
-        default_scheme: SchemesEnum,
+        default_scheme: &SchemesEnum,
     ) -> Self {
         let theme = ThemeBuilder::with_source(Argb::from_u32(0xffffffff)).build();
         let template_manager = TemplateManager::new(templates);
@@ -41,10 +40,9 @@ impl ThemeManager {
 
         ThemeManager {
             wallpaper_path,
-            source_color: Argb::from_u32(0xffffffff),
             theme,
             template_manager,
-            color_scheme: default_scheme,
+            color_scheme: default_scheme.clone(),
         }
     }
 
@@ -74,7 +72,7 @@ impl ThemeManager {
     pub fn update_scheme(&mut self, new_scheme: SchemesEnum) -> Result<String, Report> {
         self.color_scheme = new_scheme;
 
-        self.update_theme().wrap_err("TODO: i18n");
+        self.update_theme().wrap_err("TODO: i18n")?;
         Ok("TODO: i18n".to_owned())
     }
 }

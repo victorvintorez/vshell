@@ -8,7 +8,7 @@ use crate::{fl, glib_recv_mpsc, send_async, spawn, try_send, VShell};
 use color_eyre::Result;
 use gtk4::glib;
 use gtk4::Application;
-use handle_response::{handle_debug, handle_wallpaper};
+use handle_response::{handle_debug, handle_wallpaper, handle_scheme};
 use std::cell::{RefCell, RefMut};
 use std::path::Path;
 use std::rc::Rc;
@@ -136,6 +136,7 @@ impl Ipc {
         match request {
             Request::Debug(request) => handle_debug(request, application),
             Request::Wallpaper(request) => handle_wallpaper(request, theme_manager),
+            Request::Scheme(request) => handle_scheme(request, theme_manager),
         }
     }
 
