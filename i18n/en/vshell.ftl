@@ -5,11 +5,13 @@ main_debug_style-file-load = Using style.{$extension} from: {$path}/
 main_err_style-file-fail = Failed to find style.sass, style.scss, or style.css in {$path}/
 main_expect_style-parent-dir = to have parent directory
 main_expect_style-current-dir = to have current directory
-main_expect_rx-receive-signal = to recieve signal on channel
+main_expect_rx-receive-signal = to receive signal on channel
 main_info_vshell-shutdown = Shutting down vShell...
 main_expect_tx-send-signal = to send signal on channel
 main_expect_ctrl-c-handler = to set ctrl-c handler
 main_expect_tokio-runtime = to create tokio runtime
+main_info_theme-initial-load = Theme Loaded: Warnings: {$warn}
+main_error_theme-load-fail = Failed to load theme: {$error}
 
 config_error_config-parent-dir = Failed to get parent directory of config file
 config_error_config-file-fail = Failed to load config {$error}
@@ -19,6 +21,13 @@ config_debug_config-file-load = Using config.toml from: {$path}/
 logging_error_panic = Panic: {$error}
 
 macros_error_channel-send-fail = Failed to send message on channel
+
+shell_info_running-command = Running command: {$cmd}
+shell_expect_command-success-result = to return output
+shell_info_command-success = Command succeeded: {$cmd}, Result: {$result}
+shell_expect_command-fail-result = to return error
+shell_warn_command-fail = Command failed: {$cmd}, Result: {$result}
+shell_warn_command-not-run = Command could not be run: {$cmd}, Error: {$error}
 
 architecture-theme-style_expect_style-path-current-dir = current dir to exist
 architecture-theme-style_expect_gdk-display-default = to return default display

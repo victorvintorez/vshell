@@ -1,3 +1,4 @@
+use crate::fl;
 use std::process::Command;
 
 use serde::{Deserialize, Serialize};
@@ -56,9 +57,9 @@ impl From<ShellType> for Shell {
 }
 
 pub fn run_shell_cmd(shelltype: &ShellType, command: &str) -> ShellResult {
-    let shell: Shell = shelltype.clone().into();
+    let shell: Shell = (*shelltype).into();
 
-    info!("TODO: i18n");
+    info!("{}", fl!("shell_info_running-command", cmd = command));
 
     match Command::new(shell.path)
         .args([shell.flag, command])
@@ -66,23 +67,40 @@ pub fn run_shell_cmd(shelltype: &ShellType, command: &str) -> ShellResult {
     {
         Ok(output) => {
             if output.status.success() {
-                info!("TODO: i18n");
+                let res = String::from_utf8(output.stdout)
+                    .expect(&fl!("shell_expect_command-success-result"));
+                info!(
+                    "{}",
+                    fl!("shell_info_command-success", cmd = command, result = *res)
+                );
                 ShellResult {
                     command: command.to_string(),
                     success: true,
-                    output: String::from_utf8(output.stdout).expect("TODO: i18n"),
+                    output: res,
                 }
             } else {
-                warn!("TODO: i18n");
+                let res = String::from_utf8(output.stdout)
+                    .expect(&fl!("shell_expect_command-fail-result"));
+                warn!(
+                    "{}",
+                    fl!("shell_warn_command-fail", cmd = command, result = *res)
+                );
                 ShellResult {
                     command: command.to_string(),
                     success: false,
-                    output: String::from_utf8(output.stdout).expect("TODO: i18n"),
+                    output: res,
                 }
             }
         }
         Err(e) => {
-            warn!("TODO: i18n");
+            warn!(
+                "{}",
+                fl!(
+                    "shell_warn_command-not-run",
+                    cmd = command,
+                    error = format!("{:?}", e)
+                )
+            );
             ShellResult {
                 command: command.to_string(),
                 success: false,

@@ -96,12 +96,18 @@ impl VShell {
             running.store(true, Ordering::Relaxed);
 
             let instance3 = instance.clone();
-            let mut theme_manager =
-                ThemeManager::new(instance3.config.templates.clone(), &instance3.config_dir, &instance3.config.default_scheme);
+            let mut theme_manager = ThemeManager::new(
+                instance3.config.templates.clone(),
+                &instance3.config_dir,
+                &instance3.config.default_scheme,
+            );
             match theme_manager.update_theme() {
-                Ok(warnings) => info!("TODO: i18n"),
+                Ok(warnings) => info!("{}", fl!("main_info_theme-initial-load", warn = warnings)),
                 Err(e) => {
-                    error!("TODO: i18n");
+                    error!(
+                        "{}",
+                        fl!("main_error_theme-load-fail", error = format!("{:?}", e))
+                    );
                     exit(1);
                 }
             };
